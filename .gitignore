@@ -4,3 +4,8 @@
 pkg/
 
 node_modules/
+
+.compact-inc.cirru
+compact.cirru
+
+js-out/
