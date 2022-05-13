@@ -2,6 +2,9 @@
 name = "triadica-space"
 version = "0.1.0"
 edition = "2021"
+description = "WebGL demo"
+license = "MIT"
+repository = "https://github.com/Quatrefoil-GL/triadica-space.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
