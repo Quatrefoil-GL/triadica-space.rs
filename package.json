@@ -4,6 +4,6 @@
     "vite": "^2.9.9"
   },
   "dependencies": {
-    "@calcit/procs": "^0.5.44-a2"
+    "@calcit/procs": "^0.5.44-a3"
   }
 }

@@ -1,7 +1,20 @@
+mod viewer;
+
+use std::cell::RefCell;
+use std::fmt::format;
+use std::fmt::Debug;
 use std::include_str;
+use std::rc::Rc;
+use std::sync::RwLock;
+
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
+use web_sys::console::{log_1, log_2};
 use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlShader};
+
+lazy_static::lazy_static! {
+  static ref WINDOW_RATIO: RwLock<f32> = RwLock::new(1.0);
+}
 
 #[wasm_bindgen(js_name = initApp)]
 pub fn init_app() -> Result<(), JsValue> {
@@ -29,14 +42,53 @@ pub fn init_app() -> Result<(), JsValue> {
     WebGl2RenderingContext::FRAGMENT_SHADER,
     include_str!("../shaders/demo.frag"),
   )?;
+
   let program = link_program(&context, &vert_shader, &frag_shader)?;
   context.use_program(Some(&program));
 
   let vertices = compute_vertices();
 
+  bind_attributes(&context, &program, &vertices).unwrap();
+
+  let f = Rc::new(RefCell::new(None));
+  let g = f.clone();
+
+  let copied_context = Rc::new(context.to_owned());
+  let copied_program = Rc::new(program.to_owned());
+  let vertices_count = (vertices.len() / 3) as i32;
+  *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
+    if viewer::requested_rendering() {
+      bind_uniforms(&*copied_context, &*copied_program).unwrap();
+      draw(&context, vertices_count);
+    }
+
+    // Schedule ourself for another requestAnimationFrame callback.
+    request_animation_frame(f.borrow().as_ref().unwrap());
+  }) as Box<dyn FnMut()>));
+
+  request_animation_frame(g.borrow().as_ref().unwrap());
+
+  // bind_uniforms(&*copied_context, &program).unwrap();
+
+  // draw(&*copied_context, vertices_count);
+
+  Ok(())
+}
+
+fn window() -> web_sys::Window {
+  web_sys::window().expect("no global `window` exists")
+}
+
+fn request_animation_frame(f: &Closure<dyn FnMut()>) {
+  window()
+    .request_animation_frame(f.as_ref().unchecked_ref())
+    .expect("should register `requestAnimationFrame` OK");
+}
+
+fn bind_attributes(context: &WebGl2RenderingContext, program: &WebGlProgram, vertices: &[f32]) -> Result<(), JsValue> {
   // web_sys::console::log_1(&format!("{:?}", vertices).into());
 
-  let position_attribute_location = context.get_attrib_location(&program, "a_position");
+  let position_attribute_location = context.get_attrib_location(program, "a_position");
   let buffer = context.create_buffer().ok_or("Failed to create buffer")?;
   context.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buffer));
 
@@ -49,7 +101,7 @@ pub fn init_app() -> Result<(), JsValue> {
   // As a result, after `Float32Array::view` we have to be very careful not to
   // do any memory allocations before it's dropped.
   unsafe {
-    let positions_array_buf_view = js_sys::Float32Array::view(&vertices);
+    let positions_array_buf_view = js_sys::Float32Array::view(vertices);
 
     context.buffer_data_with_array_buffer_view(
       WebGl2RenderingContext::ARRAY_BUFFER,
@@ -64,26 +116,30 @@ pub fn init_app() -> Result<(), JsValue> {
   context.vertex_attrib_pointer_with_i32(0, 3, WebGl2RenderingContext::FLOAT, false, 0, 0);
   context.enable_vertex_attrib_array(position_attribute_location as u32);
 
+  Ok(())
+}
+
+fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Result<(), JsValue> {
   // backcone scale
-  let backcone_location = context.get_uniform_location(&program, "coneBackScale");
-  context.uniform1f(backcone_location.as_ref(), 0.0);
+  let backcone_location = context.get_uniform_location(program, "coneBackScale");
+  context.uniform1f(backcone_location.as_ref(), 0.5);
 
   // viewportRatio
-  let viewport_ratio_location = context.get_uniform_location(&program, "viewportRatio");
-  context.uniform1f(viewport_ratio_location.as_ref(), get_window_ratio() as f32);
+  let viewport_ratio_location = context.get_uniform_location(program, "viewportRatio");
+  let window_ratio = *WINDOW_RATIO.read().unwrap();
+  context.uniform1f(viewport_ratio_location.as_ref(), window_ratio as f32);
 
   // lookPoint
-  let look_point_location = context.get_uniform_location(&program, "lookPoint");
-  context.uniform3f(look_point_location.as_ref(), 20., 30., -800.0);
+  let look_point_location = context.get_uniform_location(program, "lookPoint");
+  let lookat = viewer::new_lookat_point();
+  log_2(&"lookat".into(), &format!("{:?}", lookat).into());
+  context.uniform3f(look_point_location.as_ref(), lookat.0, lookat.1, lookat.2);
 
   // cameraPosition
-  let camera_position_location = context.get_uniform_location(&program, "cameraPosition");
-  context.uniform3f(camera_position_location.as_ref(), 300.0, 0.0, 0.0);
-
-  context.bind_vertex_array(Some(&vao));
-
-  let vert_count = (vertices.len() / 3) as i32;
-  draw(&context, vert_count);
+  let camera_position_location = context.get_uniform_location(program, "cameraPosition");
+  let pos = viewer::get_position();
+  log_2(&"pos".into(), &format!("{:?}", pos).into());
+  context.uniform3f(camera_position_location.as_ref(), pos.0, pos.1, pos.2);
 
   Ok(())
 }
@@ -122,8 +178,22 @@ pub fn on_window_resize() -> Result<(), JsValue> {
   let inner_width = window.inner_width().unwrap().as_f64().unwrap();
   let inner_height = window.inner_height().unwrap().as_f64().unwrap();
 
-  canvas.set_attribute("width", &inner_width.to_string()).unwrap();
-  canvas.set_attribute("height", &inner_height.to_string()).unwrap();
+  let mut r = WINDOW_RATIO.write().unwrap();
+  *r = (inner_height / inner_width) as f32;
+
+  web_sys::console::log_1(&format!("{} {}", inner_height, inner_width).into());
+
+  canvas.set_attribute("width", &format!("{}px", inner_width)).unwrap();
+  canvas.set_attribute("height", &format!("{}px", inner_height)).unwrap();
+  // canvas
+  //   .set_attribute("style", &format!("width: {}px; height: {}px;", inner_width, inner_height))
+  //   .unwrap();
+
+  let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
+  let context = canvas.get_context("webgl2")?.unwrap().dyn_into::<WebGl2RenderingContext>()?;
+  context.viewport(0, 0, inner_width as i32, inner_height as i32);
+
+  viewer::mark_dirty();
 
   Ok(())
 }
@@ -157,13 +227,6 @@ pub fn compile_shader(context: &WebGl2RenderingContext, shader_type: u32, source
   }
 }
 
-pub fn get_window_ratio() -> f64 {
-  let window = web_sys::window().unwrap();
-  let inner_width = window.inner_width().unwrap().as_f64().unwrap();
-  let inner_height = window.inner_height().unwrap().as_f64().unwrap();
-  inner_height / inner_width
-}
-
 pub fn link_program(
   context: &WebGl2RenderingContext,
   vert_shader: &WebGlShader,
@@ -190,4 +253,47 @@ pub fn link_program(
         .unwrap_or_else(|| String::from("Unknown error creating program object")),
     )
   }
+}
+
+#[wasm_bindgen(js_name = "onControl")]
+pub fn on_control(
+  elapsed: f32,
+  left_move_x: f32,
+  left_move_y: f32,
+  right_move_x: f32,
+  right_move_y: f32,
+  right_delta_x: f32,
+  right_delta_y: f32,
+  left_a: bool,
+  resetting: bool,
+) -> Result<(), JsValue> {
+  if left_move_y.abs() > std::f32::EPSILON {
+    viewer::move_viewer_by((0., 0., -left_move_y * 2. * elapsed));
+  }
+  if left_move_x.abs() > std::f32::EPSILON {
+    viewer::rotate_view_by(-0.01 * elapsed * left_move_x);
+  }
+  if !left_a && (right_move_x.abs() > std::f32::EPSILON || right_move_y.abs() > std::f32::EPSILON) {
+    viewer::move_viewer_by((right_move_x * 2. * elapsed, right_move_y * 2. * elapsed, 0.));
+  }
+  if left_a && right_delta_y.abs() > std::f32::EPSILON {
+    viewer::shift_viewer_by(1. * elapsed * right_delta_y);
+  }
+  if left_a && right_delta_x.abs() > std::f32::EPSILON {
+    viewer::rotate_view_by(-0.1 * elapsed * right_delta_x);
+  }
+
+  web_sys::console::log_1(&format!("resttin: {} {}", left_a, resetting).into());
+  if resetting {
+    let shift_y = viewer::get_shift_y();
+    if shift_y < -0.06 {
+      viewer::shift_viewer_by(2. * elapsed);
+    } else if shift_y > 0.06 {
+      viewer::shift_viewer_by(-2. * elapsed);
+    } else {
+      viewer::reset_shift_y();
+    }
+  }
+
+  Ok(())
 }
