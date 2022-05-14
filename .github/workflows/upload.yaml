@@ -34,6 +34,29 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
 
+      - name: ACTIONS_ALLOW_UNSECURE_COMMANDS
+        id: ACTIONS_ALLOW_UNSECURE_COMMANDS
+        run: echo 'ACTIONS_ALLOW_UNSECURE_COMMANDS=true' >> $GITHUB_ENV
+
+      - name: add cr
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/bin
+          wget -O $GITHUB_WORKSPACE/bin/cr http://repo.calcit-lang.org/binaries/linux/cr
+          chmod +x $GITHUB_WORKSPACE/bin/cr
+          wget -O $GITHUB_WORKSPACE/bin/bundle_calcit http://repo.calcit-lang.org/binaries/linux/bundle_calcit
+          chmod +x $GITHUB_WORKSPACE/bin/bundle_calcit
+          echo "::add-path::$GITHUB_WORKSPACE/bin"
+
+      - name: "prepare modules"
+        run: >
+          mkdir -p ~/.config/calcit/modules/ && cd ~/.config/calcit/modules/
+          && git clone https://github.com/Quatrefoil-GL/touch-control.git
+
+      - name: "compiles to js"
+        run: >
+          bundle_calcit -1 -s web/
+          && cr --emit-js -1
+
       - run: wasm-pack build -t web
 
       - run: yarn && yarn vite build --base=./

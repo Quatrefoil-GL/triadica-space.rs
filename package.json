@@ -1,5 +1,9 @@
 {
   "devDependencies": {
+    "@quamolit/touch-control": "^0.0.8",
     "vite": "^2.9.9"
+  },
+  "dependencies": {
+    "@calcit/procs": "^0.5.44-a2"
   }
 }
