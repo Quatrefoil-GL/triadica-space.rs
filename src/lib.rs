@@ -18,7 +18,7 @@ lazy_static::lazy_static! {
 
 #[wasm_bindgen(js_name = initApp)]
 pub fn init_app() -> Result<(), JsValue> {
-  console_error_panic_hook::set_once();
+  // console_error_panic_hook::set_once();
 
   let window = web_sys::window().unwrap();
 
@@ -46,6 +46,13 @@ pub fn init_app() -> Result<(), JsValue> {
   let program = link_program(&context, &vert_shader, &frag_shader)?;
   context.use_program(Some(&program));
 
+  // let mut vertices = vec![];
+  // for i in path::compute_cube_vertices() {
+  //   vertices.push(i);
+  // }
+  // for i in path::compute_lamp_tree_vertices() {
+  //   vertices.push(i);
+  // }
   // let vertices = path::compute_cube_vertices();
   let vertices = path::compute_lamp_tree_vertices();
 
@@ -61,13 +68,18 @@ pub fn init_app() -> Result<(), JsValue> {
     if viewer::requested_rendering() {
       bind_uniforms(&*copied_context, &*copied_program).unwrap();
       draw(&context, vertices_count);
+      // document
+      //   .query_selector(".debug")
+      //   .unwrap()
+      //   .unwrap()
+      //   .set_text_content(Some(&viewer::render_debug_text()));
     }
 
     // Schedule ourself for another requestAnimationFrame callback.
     request_animation_frame(f.borrow().as_ref().unwrap());
   }) as Box<dyn FnMut()>));
 
-  request_animation_frame(g.borrow().as_ref().unwrap());
+  request_animation_frame(g.borrow().as_ref().expect("expect a closure"));
 
   // bind_uniforms(&*copied_context, &program).unwrap();
 
@@ -158,15 +170,15 @@ pub fn on_window_resize() -> Result<(), JsValue> {
 
   // web_sys::console::log_1(&format!("{} {}", inner_height, inner_width).into());
 
-  canvas.set_attribute("width", &format!("{}px", inner_width)).unwrap();
-  canvas.set_attribute("height", &format!("{}px", inner_height)).unwrap();
-  // canvas
-  //   .set_attribute("style", &format!("width: {}px; height: {}px;", inner_width, inner_height))
-  //   .unwrap();
+  canvas.set_attribute("width", &format!("{}px", inner_width * 2.)).unwrap();
+  canvas.set_attribute("height", &format!("{}px", inner_height * 2.)).unwrap();
+  canvas
+    .set_attribute("style", &format!("width: {}px; height: {}px;", inner_width, inner_height))
+    .unwrap();
 
   let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
   let context = canvas.get_context("webgl2")?.unwrap().dyn_into::<WebGl2RenderingContext>()?;
-  context.viewport(0, 0, inner_width as i32, inner_height as i32);
+  context.viewport(0, 0, inner_width as i32 * 2, inner_height as i32 * 2);
 
   viewer::mark_dirty();
 

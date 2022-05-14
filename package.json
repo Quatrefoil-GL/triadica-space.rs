@@ -5,7 +5,7 @@
   },
   "scripts": {
     "js": "cargo watch --why -w web/ -s 'bundle_calcit -s web/ -v -1 && cr --emit-js -1'",
-    "wasm": "cargo watch --why -w src/ -w shaders/ -s 'wasm-pack build -t web -d'"
+    "wasm": "cargo watch --why -w src/ -w shaders/ -s 'wasm-pack build -t web'"
   },
   "dependencies": {
     "@calcit/procs": "^0.5.44-a3"

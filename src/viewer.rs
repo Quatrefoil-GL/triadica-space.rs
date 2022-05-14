@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::RwLock;
 
 type Point = (f32, f32, f32);
 
@@ -63,11 +63,8 @@ pub fn to_viewer_axis(p: Point) -> Point {
 
 /// get a vector at viewing position at length 600
 pub fn new_lookat_point() -> Point {
-  let p: Point = (
-    VIEWER_ANGLE.read().unwrap().cos() * 400.,
-    *VIEWER_Y_SHIFY.read().unwrap() * 20.,
-    VIEWER_ANGLE.read().unwrap().sin() * -400.,
-  );
+  let angle = *VIEWER_ANGLE.read().unwrap();
+  let p: Point = (angle.cos() * 400., *VIEWER_Y_SHIFY.read().unwrap() * 20., angle.sin() * -400.);
 
   let l = (p.0 * p.0 + p.1 * p.1 + p.2 * p.2).sqrt();
   let ratio = 600. / l;
@@ -96,4 +93,12 @@ pub fn get_shift_y() -> f32 {
 pub fn reset_shift_y() {
   *VIEWER_Y_SHIFY.write().unwrap() = 0.0;
   mark_dirty()
+}
+
+pub fn render_debug_text() -> String {
+  let mut ret = String::new();
+  ret.push_str(&format!("{:?}\n", get_position()));
+  ret.push_str(&VIEWER_ANGLE.read().unwrap().to_string());
+  ret.push_str(&format!("\n{:?}", new_lookat_point()));
+  ret
 }

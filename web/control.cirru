@@ -10,7 +10,7 @@ defn main! ()
     let
         resetting? $ and (:left-b? states) (:right-b? states)
       when
-        or (not= zero (:left-move states)) (not= zero (:right-move delta)) resetting?
+        or (not= zero (:left-move states)) (not= zero (:right-move states)) resetting?
         let-sugar
             ([] lx ly) (:left-move states)
             ([] rx ry) (:right-move states)

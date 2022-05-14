@@ -11,3 +11,5 @@ compact.cirru
 js-out/
 
 .calcit-error.cirru
+
+dist/
