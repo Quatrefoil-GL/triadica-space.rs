@@ -9,3 +9,5 @@ node_modules/
 compact.cirru
 
 js-out/
+
+.calcit-error.cirru

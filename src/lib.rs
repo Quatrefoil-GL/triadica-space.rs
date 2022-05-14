@@ -1,8 +1,8 @@
+mod path;
 mod viewer;
 
 use std::cell::RefCell;
 use std::fmt::format;
-use std::fmt::Debug;
 use std::include_str;
 use std::rc::Rc;
 use std::sync::RwLock;
@@ -46,7 +46,8 @@ pub fn init_app() -> Result<(), JsValue> {
   let program = link_program(&context, &vert_shader, &frag_shader)?;
   context.use_program(Some(&program));
 
-  let vertices = compute_vertices();
+  // let vertices = path::compute_cube_vertices();
+  let vertices = path::compute_lamp_tree_vertices();
 
   bind_attributes(&context, &program, &vertices).unwrap();
 
@@ -122,7 +123,7 @@ fn bind_attributes(context: &WebGl2RenderingContext, program: &WebGlProgram, ver
 fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Result<(), JsValue> {
   // backcone scale
   let backcone_location = context.get_uniform_location(program, "coneBackScale");
-  context.uniform1f(backcone_location.as_ref(), 0.5);
+  context.uniform1f(backcone_location.as_ref(), 2.);
 
   // viewportRatio
   let viewport_ratio_location = context.get_uniform_location(program, "viewportRatio");
@@ -132,42 +133,16 @@ fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Re
   // lookPoint
   let look_point_location = context.get_uniform_location(program, "lookPoint");
   let lookat = viewer::new_lookat_point();
-  log_2(&"lookat".into(), &format!("{:?}", lookat).into());
+  // log_2(&"lookat".into(), &format!("{:?}", lookat).into());
   context.uniform3f(look_point_location.as_ref(), lookat.0, lookat.1, lookat.2);
 
   // cameraPosition
   let camera_position_location = context.get_uniform_location(program, "cameraPosition");
   let pos = viewer::get_position();
-  log_2(&"pos".into(), &format!("{:?}", pos).into());
+  // log_2(&"pos".into(), &format!("{:?}", pos).into());
   context.uniform3f(camera_position_location.as_ref(), pos.0, pos.1, pos.2);
 
   Ok(())
-}
-
-pub fn compute_vertices() -> Vec<f32> {
-  let geo: Vec<[f32; 3]> = vec![
-    [-0.5, -0.5, 0.0],
-    [-0.5, 0.5, 0.0],
-    [0.5, 0.5, 0.0],
-    [0.5, -0.5, 0.0],
-    [-0.5, -0.5, -1.0],
-    [-0.5, 0.5, -1.0],
-    [0.5, 0.5, -1.0],
-    [0.5, -0.5, -1.0],
-  ];
-
-  let indices = vec![0, 1, 1, 2, 2, 3, 3, 0, 0, 4, 1, 5, 2, 6, 3, 7, 4, 5, 5, 6, 6, 7, 7, 4];
-  let mut points: Vec<[f32; 3]> = Vec::new();
-  for i in 0..indices.len() {
-    points.push(geo[indices[i]]);
-  }
-
-  let moved_points: Vec<_> = points.iter().map(|p| [p[0] * 400., p[1] * 400., p[2] * 400. - 1200.]).collect();
-  let mut vertices: Vec<f32> = Vec::new();
-  for p in moved_points {
-    vertices.extend_from_slice(&p);
-  }
-  vertices
 }
 
 #[wasm_bindgen(js_name = onWindowResize)]
@@ -181,7 +156,7 @@ pub fn on_window_resize() -> Result<(), JsValue> {
   let mut r = WINDOW_RATIO.write().unwrap();
   *r = (inner_height / inner_width) as f32;
 
-  web_sys::console::log_1(&format!("{} {}", inner_height, inner_width).into());
+  // web_sys::console::log_1(&format!("{} {}", inner_height, inner_width).into());
 
   canvas.set_attribute("width", &format!("{}px", inner_width)).unwrap();
   canvas.set_attribute("height", &format!("{}px", inner_height)).unwrap();
@@ -283,7 +258,6 @@ pub fn on_control(
     viewer::rotate_view_by(-0.1 * elapsed * right_delta_x);
   }
 
-  web_sys::console::log_1(&format!("resttin: {} {}", left_a, resetting).into());
   if resetting {
     let shift_y = viewer::get_shift_y();
     if shift_y < -0.06 {

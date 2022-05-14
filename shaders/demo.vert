@@ -58,10 +58,10 @@ void main() {
 
   v_s = result.s;
   v_r = result.r;
-  if (result.r > 0.0) {
+  // if (result.r > 0.0) {
     gl_Position = vec4(pos_next.x * 0.001, pos_next.y * 0.001, pos_next.z * 0.001, 1.0);
-  } else {
-    gl_Position = vec4(0.0, -1000.0, 0.0, 0.0);
-    // gl_Position = vec4(a_position.x/1000.0, a_position.y/1000., 0.1, 1.0);
-  }
+  // } else {
+  //   gl_Position = vec4(0.0, -1000.0, 0.0, 0.0);
+  //   // gl_Position = vec4(a_position.x/1000.0, a_position.y/1000., 0.1, 1.0);
+  // }
 }

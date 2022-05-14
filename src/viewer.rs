@@ -1,4 +1,3 @@
-use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, RwLock};
 
 type Point = (f32, f32, f32);
@@ -81,7 +80,7 @@ pub fn get_position() -> Point {
 
 pub fn mark_dirty() {
   *DIRTY_MARK.write().unwrap() = true;
-  web_sys::console::log_1(&"dirty".into());
+  // web_sys::console::log_1(&"dirty".into());
 }
 
 pub fn requested_rendering() -> bool {

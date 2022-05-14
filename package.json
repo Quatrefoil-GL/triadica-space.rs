@@ -3,6 +3,10 @@
     "@quamolit/touch-control": "^0.0.8",
     "vite": "^2.9.9"
   },
+  "scripts": {
+    "js": "cargo watch --why -w web/ -s 'bundle_calcit -s web/ -v -1 && cr --emit-js -1'",
+    "wasm": "cargo watch --why -w src/ -w shaders/ -s 'wasm-pack build -t web -d'"
+  },
   "dependencies": {
     "@calcit/procs": "^0.5.44-a3"
   }
