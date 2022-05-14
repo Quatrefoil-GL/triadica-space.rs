@@ -46,6 +46,11 @@ pub fn init_app() -> Result<(), JsValue> {
   let program = link_program(&context, &vert_shader, &frag_shader)?;
   context.use_program(Some(&program));
 
+  context.enable(WebGl2RenderingContext::DEPTH_TEST);
+  context.depth_func(WebGl2RenderingContext::LESS);
+  // context.blend_func(WebGl2RenderingContext::ONE, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
+  // context.depth_mask(false);
+
   // let mut vertices = vec![];
   // for i in path::compute_cube_vertices() {
   //   vertices.push(i);
@@ -186,10 +191,11 @@ pub fn on_window_resize() -> Result<(), JsValue> {
 }
 
 fn draw(context: &WebGl2RenderingContext, vert_count: i32) {
+  // context.color_mask(false, false, false, false);
   context.clear_color(0.0, 0.0, 0.0, 1.0);
   context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
 
-  context.draw_arrays(WebGl2RenderingContext::LINES, 0, vert_count);
+  context.draw_arrays(WebGl2RenderingContext::LINE_STRIP, 0, vert_count);
 }
 
 pub fn compile_shader(context: &WebGl2RenderingContext, shader_type: u32, source: &str) -> Result<WebGlShader, String> {

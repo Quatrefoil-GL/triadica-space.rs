@@ -30,12 +30,12 @@ type Q32 = Quaternion<f32>;
 
 pub fn compute_lamp_tree_vertices() -> Vec<f32> {
   let points = fold_line4(
-    15,
+    14,
     Quaternion::<f32>::default(),
-    qi(0, 0, 2000, 0),
+    qi(0, 0, 1200, 0),
     (qi(22, 0, 20, 0), qi(23, 16, 20, 0), qi(27, 16, 20, 0), qi(28, 0, 20, 0)),
     qi(50, 0, 0, 0).inverse(),
-    0.4,
+    2.,
   );
   let mut vertices = Vec::new();
   for p in points {
