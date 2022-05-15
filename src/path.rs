@@ -1,5 +1,6 @@
 use quaternions::{qi, Quaternion};
 
+#[allow(dead_code)]
 pub fn compute_cube_vertices() -> Vec<f32> {
   let geo: Vec<[f32; 3]> = vec![
     [-0.5, -0.5, 0.0],

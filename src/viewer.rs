@@ -102,6 +102,7 @@ pub fn reset_shift_y() {
   mark_dirty()
 }
 
+#[allow(dead_code)]
 pub fn render_debug_text() -> String {
   let mut ret = String::new();
   ret.push_str(&format!("{:?}\n", get_position()));

@@ -172,7 +172,6 @@ pub fn on_window_resize() -> Result<(), JsValue> {
   let inner_width = window.inner_width()?.as_f64().ok_or("to get window width")?;
   let inner_height = window.inner_height()?.as_f64().ok_or("to get window height")?;
 
-  // TODO, not need to have a lock
   let mut r = WINDOW_RATIO.write().expect("write ratio");
   *r = (inner_height / inner_width) as f32;
 
@@ -252,6 +251,7 @@ pub fn link_program(
   }
 }
 
+#[allow(clippy::too_many_arguments)]
 #[wasm_bindgen(js_name = "onControl")]
 pub fn on_control(
   elapsed: f32,
