@@ -2,14 +2,13 @@ mod path;
 mod viewer;
 
 use std::cell::RefCell;
-use std::fmt::format;
 use std::include_str;
 use std::rc::Rc;
 use std::sync::RwLock;
 
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::console::{log_1, log_2};
+// use web_sys::console::{log_1, log_2};
 use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlShader};
 
 lazy_static::lazy_static! {
@@ -20,16 +19,19 @@ lazy_static::lazy_static! {
 pub fn init_app() -> Result<(), JsValue> {
   // console_error_panic_hook::set_once();
 
-  let window = web_sys::window().unwrap();
+  let window = web_sys::window().ok_or("to get window")?;
 
-  let document = window.document().unwrap();
-  let canvas = document.query_selector(".app").unwrap().unwrap();
+  let document = window.document().ok_or("to get document")?;
+  let canvas = document.query_selector(".app")?.ok_or("to get canvas")?;
 
   on_window_resize()?;
 
   let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
 
-  let context = canvas.get_context("webgl2")?.unwrap().dyn_into::<WebGl2RenderingContext>()?;
+  let context = canvas
+    .get_context("webgl2")?
+    .ok_or("to load context")?
+    .dyn_into::<WebGl2RenderingContext>()?;
 
   let vert_shader = compile_shader(
     &context,
@@ -61,34 +63,30 @@ pub fn init_app() -> Result<(), JsValue> {
   // let vertices = path::compute_cube_vertices();
   let vertices = path::compute_lamp_tree_vertices();
 
-  bind_attributes(&context, &program, &vertices).unwrap();
+  bind_attributes(&context, &program, &vertices)?;
 
   let f = Rc::new(RefCell::new(None));
   let g = f.clone();
 
   let copied_context = Rc::new(context.to_owned());
-  let copied_program = Rc::new(program.to_owned());
+  let copied_program = Rc::new(program);
   let vertices_count = (vertices.len() / 3) as i32;
   *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
     if viewer::requested_rendering() {
-      bind_uniforms(&*copied_context, &*copied_program).unwrap();
+      bind_uniforms(&*copied_context, &*copied_program).expect("to bind uniforms");
       draw(&context, vertices_count);
       // document
       //   .query_selector(".debug")
-      //   .unwrap()
-      //   .unwrap()
+      //   .expect("to get debug area")
+      //   .expect("some debug area")
       //   .set_text_content(Some(&viewer::render_debug_text()));
     }
 
     // Schedule ourself for another requestAnimationFrame callback.
-    request_animation_frame(f.borrow().as_ref().unwrap());
+    request_animation_frame(f.borrow().as_ref().expect("building closure"));
   }) as Box<dyn FnMut()>));
 
-  request_animation_frame(g.borrow().as_ref().expect("expect a closure"));
-
-  // bind_uniforms(&*copied_context, &program).unwrap();
-
-  // draw(&*copied_context, vertices_count);
+  request_animation_frame(g.borrow().as_ref().ok_or("expect a closure")?);
 
   Ok(())
 }
@@ -144,7 +142,7 @@ fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Re
 
   // viewportRatio
   let viewport_ratio_location = context.get_uniform_location(program, "viewportRatio");
-  let window_ratio = *WINDOW_RATIO.read().unwrap();
+  let window_ratio = *WINDOW_RATIO.read().expect("to get window ratio");
   context.uniform1f(viewport_ratio_location.as_ref(), window_ratio as f32);
 
   // lookPoint
@@ -164,25 +162,31 @@ fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Re
 
 #[wasm_bindgen(js_name = onWindowResize)]
 pub fn on_window_resize() -> Result<(), JsValue> {
-  let window = web_sys::window().unwrap();
-  let canvas = window.document().unwrap().query_selector(".app").unwrap().unwrap();
+  let window = web_sys::window().ok_or("to get window")?;
+  let canvas = window
+    .document()
+    .ok_or("to get document")?
+    .query_selector(".app")?
+    .ok_or("to get canvas")?;
 
-  let inner_width = window.inner_width().unwrap().as_f64().unwrap();
-  let inner_height = window.inner_height().unwrap().as_f64().unwrap();
+  let inner_width = window.inner_width()?.as_f64().ok_or("to get window width")?;
+  let inner_height = window.inner_height()?.as_f64().ok_or("to get window height")?;
 
-  let mut r = WINDOW_RATIO.write().unwrap();
+  // TODO, not need to have a lock
+  let mut r = WINDOW_RATIO.write().expect("write ratio");
   *r = (inner_height / inner_width) as f32;
 
   // web_sys::console::log_1(&format!("{} {}", inner_height, inner_width).into());
 
-  canvas.set_attribute("width", &format!("{}px", inner_width * 2.)).unwrap();
-  canvas.set_attribute("height", &format!("{}px", inner_height * 2.)).unwrap();
-  canvas
-    .set_attribute("style", &format!("width: {}px; height: {}px;", inner_width, inner_height))
-    .unwrap();
+  canvas.set_attribute("width", &format!("{}px", inner_width * 2.))?;
+  canvas.set_attribute("height", &format!("{}px", inner_height * 2.))?;
+  canvas.set_attribute("style", &format!("width: {}px; height: {}px;", inner_width, inner_height))?;
 
   let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
-  let context = canvas.get_context("webgl2")?.unwrap().dyn_into::<WebGl2RenderingContext>()?;
+  let context = canvas
+    .get_context("webgl2")?
+    .ok_or("to get context")?
+    .dyn_into::<WebGl2RenderingContext>()?;
   context.viewport(0, 0, inner_width as i32 * 2, inner_height as i32 * 2);
 
   viewer::mark_dirty();
@@ -277,7 +281,7 @@ pub fn on_control(
   }
 
   if resetting {
-    let shift_y = viewer::get_shift_y();
+    let shift_y = viewer::get_y_shift();
     if shift_y < -0.06 {
       viewer::shift_viewer_by(2. * elapsed);
     } else if shift_y > 0.06 {

@@ -64,7 +64,7 @@ void main() {
 
   v_s = result.s;
   v_r = result.r;
-  float zoom = 0.002;
+  float zoom = 0.0004;
   // if (result.r > 0.0) {
     gl_Position = vec4(pos_next.x * zoom, pos_next.y * zoom, pos_next.z * zoom, 1.0);
   // } else {
