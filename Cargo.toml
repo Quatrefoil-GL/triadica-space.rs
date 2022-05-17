@@ -12,6 +12,8 @@ repository = "https://github.com/Quatrefoil-GL/triadica-space.rs"
 js-sys = "0.3.57"
 wasm-bindgen = "0.2.80"
 console_error_panic_hook = "0.1.7"
+lazy_static = "1.4.0"
+quaternions = "0.5.0-a2"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

@@ -16,11 +16,18 @@ jobs:
 
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
+          components: clippy
+          override: true
 
       - uses: jetli/wasm-pack-action@v0.3.0
         with:
           version: "latest"
+
+      - uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-features
 
       - name: Get yarn cache
         id: yarn-cache
