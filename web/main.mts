@@ -15,7 +15,7 @@ init().then(() => {
 
   startControlLoop(10, (elapsed, states, delta) => {
     let resetting = states.leftB && states.rightB;
-    if (!isZero(states.leftMove) || isZero(states.rightMove) || resetting) {
+    if (!isZero(states.leftMove) || !isZero(states.rightMove) || resetting) {
       onControl(
         elapsed,
         states.leftMove[0],

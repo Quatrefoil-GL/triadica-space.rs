@@ -12,15 +12,10 @@
   resolved "https://registry.yarnpkg.com/@esbuild/linux-loong64/-/linux-loong64-0.15.10.tgz#78a42897c2cf8db9fd5f1811f7590393b77774c7"
   integrity sha512-w0Ou3Z83LOYEkwaui2M8VwIp+nLi/NA60lBLMvaJ+vXVMcsARYdEzLNE7RSm4+lSg4zq4d7fAVuzk7PNQ5JFgg==
 
-"@quamolit/touch-control@^0.0.11":
-  version "0.0.11"
-  resolved "https://registry.yarnpkg.com/@quamolit/touch-control/-/touch-control-0.0.11.tgz#f6d01a7ecac385d5f4955118b6d630958d660070"
-  integrity sha512-v1ygM4gLeRkidbSil99dpdUcOjOR9EaWH448HEaQIwIWYYB4a58hCT0hSlGknPJRQxp8ZbjDo8T+LpZhCf8vfQ==
-
-"@triadica/touch-control@^0.0.1-a1":
-  version "0.0.1-a1"
-  resolved "https://registry.yarnpkg.com/@triadica/touch-control/-/touch-control-0.0.1-a1.tgz#34d62cdaf53ce81598bf032c3231c6e7a7bdc93e"
-  integrity sha512-MWChMZrZU/vV9lSLRa17xvzpEoJFNSMIs82H2nZ5ojyl0WNp4pQpABudwSEhAKv028/2PBLO8dJjKGBjQSY8Mg==
+"@triadica/touch-control@0.0.1-a3":
+  version "0.0.1-a3"
+  resolved "https://registry.yarnpkg.com/@triadica/touch-control/-/touch-control-0.0.1-a3.tgz#cbe049773ae8b566ba0b28cd038cfad7ea3f0918"
+  integrity sha512-/Jm7PwbrbHTW9YNP8uo043qnNw1LjLtWro6EADLattNe18FOJ7L08B2zfgFhx5L9uLuQNHE3ghAJ2S7QF3/6Dw==
 
 esbuild-android-64@0.15.10:
   version "0.15.10"
