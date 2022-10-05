@@ -13,3 +13,5 @@ js-out/
 .calcit-error.cirru
 
 dist/
+
+.vscode
