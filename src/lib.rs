@@ -6,6 +6,7 @@ use std::include_str;
 use std::rc::Rc;
 use std::sync::RwLock;
 
+use glam::Vec3;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 // use web_sys::console::{log_1, log_2};
@@ -149,13 +150,13 @@ fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Re
   let look_point_location = context.get_uniform_location(program, "lookPoint");
   let lookat = viewer::new_lookat_point();
   // log_2(&"lookat".into(), &format!("{:?}", lookat).into());
-  context.uniform3f(look_point_location.as_ref(), lookat.0, lookat.1, lookat.2);
+  context.uniform3f(look_point_location.as_ref(), lookat.x, lookat.y, lookat.z);
 
   // cameraPosition
   let camera_position_location = context.get_uniform_location(program, "cameraPosition");
   let pos = viewer::get_position();
   // log_2(&"pos".into(), &format!("{:?}", pos).into());
-  context.uniform3f(camera_position_location.as_ref(), pos.0, pos.1, pos.2);
+  context.uniform3f(camera_position_location.as_ref(), pos.x, pos.y, pos.z);
 
   Ok(())
 }
@@ -265,13 +266,13 @@ pub fn on_control(
   resetting: bool,
 ) -> Result<(), JsValue> {
   if left_move_y.abs() > std::f32::EPSILON {
-    viewer::move_viewer_by((0., 0., -left_move_y * 2. * elapsed));
+    viewer::move_viewer_by(Vec3::new(0., 0., -left_move_y * 2. * elapsed));
   }
   if left_move_x.abs() > std::f32::EPSILON {
     viewer::rotate_view_by(-0.01 * elapsed * left_move_x);
   }
   if !left_a && (right_move_x.abs() > std::f32::EPSILON || right_move_y.abs() > std::f32::EPSILON) {
-    viewer::move_viewer_by((right_move_x * 2. * elapsed, right_move_y * 2. * elapsed, 0.));
+    viewer::move_viewer_by(Vec3::new(right_move_x * 2. * elapsed, right_move_y * 2. * elapsed, 0.));
   }
   if left_a && right_delta_y.abs() > std::f32::EPSILON {
     viewer::shift_viewer_by(1. * elapsed * right_delta_y);
