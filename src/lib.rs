@@ -16,6 +16,8 @@ lazy_static::lazy_static! {
   static ref WINDOW_RATIO: RwLock<f32> = RwLock::new(1.0);
 }
 
+use viewer::is_zero;
+
 #[wasm_bindgen(js_name = initApp)]
 pub fn init_app() -> Result<(), JsValue> {
   // console_error_panic_hook::set_once();
@@ -276,34 +278,24 @@ pub fn on_control(
   right_move_y: f32,
   right_delta_x: f32,
   right_delta_y: f32,
-  left_a: bool,
-  resetting: bool,
+  right_a: bool,
 ) -> Result<(), JsValue> {
-  if left_move_y.abs() > std::f32::EPSILON {
+  if !is_zero(left_move_y) {
     viewer::move_viewer_by(Vec3::new(0., 0., -left_move_y * 2. * elapsed));
   }
-  if left_move_x.abs() > std::f32::EPSILON {
-    viewer::rotate_view_by(-0.01 * elapsed * left_move_x);
+  if !(is_zero(left_move_x)) {
+    viewer::rotate_glance_by(-0.01 * elapsed * left_move_x, 0.0);
   }
-  if !left_a && (right_move_x.abs() > std::f32::EPSILON || right_move_y.abs() > std::f32::EPSILON) {
+  if !right_a && !is_zero(right_move_x) || !is_zero(right_move_y) {
     viewer::move_viewer_by(Vec3::new(right_move_x * 2. * elapsed, right_move_y * 2. * elapsed, 0.));
   }
-  if left_a && right_delta_y.abs() > std::f32::EPSILON {
-    viewer::shift_viewer_by(1. * elapsed * right_delta_y);
-  }
-  if left_a && right_delta_x.abs() > std::f32::EPSILON {
-    viewer::rotate_view_by(-0.1 * elapsed * right_delta_x);
+
+  if right_a && !is_zero(right_delta_y) {
+    viewer::rotate_glance_by(0., right_delta_y * 0.05 * elapsed);
   }
 
-  if resetting {
-    let shift_y = viewer::get_y_shift();
-    if shift_y < -0.06 {
-      viewer::shift_viewer_by(2. * elapsed);
-    } else if shift_y > 0.06 {
-      viewer::shift_viewer_by(-2. * elapsed);
-    } else {
-      viewer::reset_shift_y();
-    }
+  if right_a && !is_zero(right_delta_x) {
+    viewer::spin_glance_by(right_delta_x * -0.05 * elapsed);
   }
 
   Ok(())

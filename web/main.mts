@@ -14,8 +14,7 @@ init().then(() => {
   renderControl();
 
   startControlLoop(10, (elapsed, states, delta) => {
-    let resetting = states.leftB && states.rightB;
-    if (!isZero(states.leftMove) || !isZero(states.rightMove) || resetting) {
+    if (!isZero(states.leftMove) || !isZero(states.rightMove)) {
       onControl(
         elapsed,
         states.leftMove[0],
@@ -24,8 +23,7 @@ init().then(() => {
         states.rightMove[1],
         delta.rightMove[0],
         delta.rightMove[1],
-        states.leftA,
-        resetting
+        states.rightA
       );
     }
   });
