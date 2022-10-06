@@ -6,6 +6,9 @@ lazy_static::lazy_static! {
   static ref VIEWER_ANGLE: RwLock<f32> = RwLock::new(std::f32::consts::PI * 0.5);
   static ref VIEWER_Y_SHIFY: RwLock<f32> = RwLock::new(0.0);
   static ref DIRTY_MARK: RwLock<bool> = RwLock::new(true);
+
+  /// TODO Control upward direction with touch control
+  static ref VIEWER_UPWARD: RwLock<Vec3> = RwLock::new(Vec3::new(0.0, 1.0, 0.0));
 }
 
 pub fn move_viewer_by(p: Vec3) {
@@ -66,7 +69,7 @@ pub fn new_lookat_point() -> Vec3 {
   let y_shift = get_y_shift();
   let p: Vec3 = Vec3::new(angle.cos() * 400., y_shift * 20., angle.sin() * -400.);
 
-  let l = (p.x * p.x + p.y * p.y + p.z * p.z).sqrt();
+  let l = p.length();
   let ratio = 600. / l;
   Vec3::new(p.x * ratio, p.y * ratio, p.z * ratio)
 }
@@ -108,4 +111,8 @@ pub fn render_debug_text() -> String {
   ret.push_str(&get_viewer_angle().to_string());
   write!(ret, "\n{:?}", new_lookat_point()).expect("write");
   ret
+}
+
+pub fn get_view_upward() -> Vec3 {
+  *VIEWER_UPWARD.read().expect("to load viewer upward")
 }

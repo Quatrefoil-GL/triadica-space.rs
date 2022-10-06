@@ -33,4 +33,6 @@ init().then(() => {
   window.addEventListener("resize", (event) => {
     onWindowResize();
   });
+
+  console.log("app loaded");
 });

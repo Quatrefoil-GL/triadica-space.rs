@@ -1,8 +1,12 @@
 
+uniform float lookDistance;
+uniform vec3 forward;
+uniform vec3 upward;
+uniform vec3 rightward;
+
 uniform float coneBackScale;
 uniform float viewportRatio;
 
-uniform vec3 lookPoint;
 uniform vec3 cameraPosition;
 
 attribute vec3 a_position;
@@ -37,25 +41,22 @@ PointResult transform_perspective(vec3 p) {
   float y = moved_point.y;
   float z = moved_point.z;
 
-  float a = lookPoint.x;
-  float b = lookPoint.y;
-  float c = lookPoint.z;
+  float r = dot(moved_point, forward) / lookDistance;
 
-  float r = (a*x + b*y + c*z) / sumSquares3(a, b, c);
-
-  if (r < (s * -0.8)) {
+  if (r < (s * -0.9)) {
     // make it disappear with depth test since it's probably behind the camera
     return PointResult(vec3(0.0, 0.0, 10000.), r, s);
   }
 
-  float q = (s + 1.0) / (r + s);
-  float l1 = sqrt((a*a*b*b) + square(sumSquares2(a,c)) + (b*b*c*c));
-
-  float y_next = (q*y + b*q*s - b*s - b) / sumSquares2(a, c) * l1;
-  float x_next = (((q*x + a*q*s - a*s - a) - (y_next * (-a * b) / l1)) / -c) * sqrt(sumSquares2(a,c));;
+  float screen_scale = (s + 1.0) / (r + s);
+  float y_next = dot(moved_point, upward) * screen_scale;
+  float x_next = - dot(moved_point, -rightward) * screen_scale;
   float z_next = r;
 
-  return PointResult(vec3(x_next, y_next / viewportRatio, z_next), r, s);
+  return PointResult(
+    vec3(x_next, y_next / viewportRatio, z_next),
+    r, s
+  );
 }
 
 void main() {

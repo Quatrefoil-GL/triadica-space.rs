@@ -137,6 +137,26 @@ fn bind_attributes(context: &WebGl2RenderingContext, program: &WebGlProgram, ver
 }
 
 fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Result<(), JsValue> {
+  let lookat = viewer::new_lookat_point();
+  // look distance
+  let look_distance = context.get_uniform_location(program, "lookDistance");
+  context.uniform1f(look_distance.as_ref(), lookat.length());
+
+  // forward
+  let forward = context.get_uniform_location(program, "forward");
+  let lookat_u = lookat.normalize();
+  context.uniform3f(forward.as_ref(), lookat_u.x, lookat_u.y, lookat_u.z);
+
+  // upward
+  let upward = context.get_uniform_location(program, "upward");
+  let upward_vector = viewer::get_view_upward();
+  context.uniform3f(upward.as_ref(), upward_vector.x, upward_vector.y, upward_vector.z);
+
+  // rightward
+  let rightward = context.get_uniform_location(program, "rightward");
+  let rightward_vector = lookat_u.cross(upward_vector);
+  context.uniform3f(rightward.as_ref(), rightward_vector.x, rightward_vector.y, rightward_vector.z);
+
   // backcone scale
   let backcone_location = context.get_uniform_location(program, "coneBackScale");
   context.uniform1f(backcone_location.as_ref(), 2.);
@@ -145,12 +165,6 @@ fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Re
   let viewport_ratio_location = context.get_uniform_location(program, "viewportRatio");
   let window_ratio = *WINDOW_RATIO.read().expect("to get window ratio");
   context.uniform1f(viewport_ratio_location.as_ref(), window_ratio as f32);
-
-  // lookPoint
-  let look_point_location = context.get_uniform_location(program, "lookPoint");
-  let lookat = viewer::new_lookat_point();
-  // log_2(&"lookat".into(), &format!("{:?}", lookat).into());
-  context.uniform3f(look_point_location.as_ref(), lookat.x, lookat.y, lookat.z);
 
   // cameraPosition
   let camera_position_location = context.get_uniform_location(program, "cameraPosition");
