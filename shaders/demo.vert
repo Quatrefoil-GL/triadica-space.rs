@@ -14,18 +14,6 @@ attribute vec3 a_position;
 varying float v_r;
 varying float v_s;
 
-float square(float a) {
-  return a * a;
-}
-
-float sumSquares2(float a, float b) {
-  return a * a + b * b;
-}
-
-float sumSquares3(float a, float b, float c) {
-  return a * a + b * b + c * c;
-}
-
 struct PointResult {
   vec3 point;
   float r;
@@ -65,11 +53,6 @@ void main() {
 
   v_s = result.s;
   v_r = result.r;
-  float zoom = 0.0004;
-  // if (result.r > 0.0) {
-    gl_Position = vec4(pos_next.x * zoom, pos_next.y * zoom, pos_next.z * zoom, 1.0);
-  // } else {
-  //   gl_Position = vec4(0.0, -1000.0, 0.0, 0.0);
-  //   // gl_Position = vec4(a_position.x/1000.0, a_position.y/1000., 0.1, 1.0);
-  // }
+
+  gl_Position = vec4(pos_next * 0.002, 1.0);
 }

@@ -174,7 +174,7 @@ fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Re
   bind_uniform3f_location(context, program, "rightward", rightward_vector)?;
 
   // backcone scale
-  bind_uniform_location(context, program, "coneBackScale", 2.0)?;
+  bind_uniform_location(context, program, "coneBackScale", 0.5)?;
 
   // viewportRatio
   let window_ratio = *WINDOW_RATIO.read().expect("to get window ratio");
