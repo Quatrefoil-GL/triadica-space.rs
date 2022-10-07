@@ -21,17 +21,14 @@ pub fn move_viewer_by(p: Vec3) {
 pub fn rotate_glance_by(x: f32, y: f32) {
   if !is_zero(x) {
     let da = x * 0.1;
-    let forward = get_view_forward();
-    let upward = get_view_upward();
-    let rightward = upward.cross(forward);
+    let (forward, _, rightward) = get_directions();
     *VIEWER_FORWARD.write().expect("to write") = forward * da.cos() + rightward * da.sin();
     mark_dirty();
   }
 
   if !is_zero(y) {
     let da = y * 0.1;
-    let forward = get_view_forward();
-    let upward = get_view_upward();
+    let (forward, upward, _) = get_directions();
     *VIEWER_FORWARD.write().expect("to write") = forward * da.cos() + upward * da.sin();
     *VIEWER_UPWARD.write().expect("to write") = upward * da.cos() - forward * da.sin();
     mark_dirty();
@@ -41,9 +38,7 @@ pub fn rotate_glance_by(x: f32, y: f32) {
 pub fn spin_glance_by(v: f32) {
   if !is_zero(v) {
     let da = v * 0.1;
-    let forward = get_view_forward();
-    let upward = get_view_upward();
-    let rightward = upward.cross(forward);
+    let (_, upward, rightward) = get_directions();
     *VIEWER_UPWARD.write().expect("to write viewer upward") = upward * da.cos() + rightward * da.sin();
     mark_dirty();
   }
@@ -53,11 +48,16 @@ fn get_view_forward() -> Vec3 {
   *VIEWER_FORWARD.read().expect("to read viewer forward")
 }
 
+fn get_directions() -> (Vec3, Vec3, Vec3) {
+  let forward = *VIEWER_FORWARD.read().expect("to read viewer forward");
+  let upward = *VIEWER_UPWARD.read().expect("to load viewer upward");
+  let rightward = upward.cross(forward); // TODO check this
+  (forward, upward, rightward)
+}
+
 /// compare the point to viewer's position and angle
 pub fn to_viewer_axis(p: Vec3) -> Vec3 {
-  let forward = get_view_forward();
-  let upward = get_view_upward();
-  let rightward = upward.cross(forward);
+  let (forward, upward, rightward) = get_directions();
   rightward * -p.x + upward * p.y + forward * -p.z
 }
 

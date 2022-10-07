@@ -15,6 +15,7 @@ init().then(() => {
 
   startControlLoop(10, (elapsed, states, delta) => {
     if (!isZero(states.leftMove) || !isZero(states.rightMove)) {
+      // console.log("shift a", states.shift);
       onControl(
         elapsed,
         states.leftMove[0],
@@ -23,7 +24,7 @@ init().then(() => {
         states.rightMove[1],
         delta.rightMove[0],
         delta.rightMove[1],
-        states.rightA
+        states.rightA || states.shift
       );
     }
   });

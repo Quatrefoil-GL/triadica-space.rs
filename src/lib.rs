@@ -276,8 +276,8 @@ pub fn on_control(
   left_move_y: f32,
   right_move_x: f32,
   right_move_y: f32,
-  right_delta_x: f32,
-  right_delta_y: f32,
+  _right_delta_x: f32,
+  _right_delta_y: f32,
   right_a: bool,
 ) -> Result<(), JsValue> {
   if !is_zero(left_move_y) {
@@ -286,16 +286,19 @@ pub fn on_control(
   if !(is_zero(left_move_x)) {
     viewer::rotate_glance_by(-0.01 * elapsed * left_move_x, 0.0);
   }
-  if !right_a && !is_zero(right_move_x) || !is_zero(right_move_y) {
+
+  // log_1(&JsValue::from_str(format!("shift? {}", right_a).as_str()));
+
+  if right_a {
+    if !is_zero(right_move_y) {
+      viewer::rotate_glance_by(0., right_move_y * 0.05 * elapsed);
+    }
+
+    if !is_zero(right_move_x) {
+      viewer::spin_glance_by(right_move_x * -0.05 * elapsed);
+    }
+  } else if !is_zero(right_move_x) || !is_zero(right_move_y) {
     viewer::move_viewer_by(Vec3::new(right_move_x * 2. * elapsed, right_move_y * 2. * elapsed, 0.));
-  }
-
-  if right_a && !is_zero(right_delta_y) {
-    viewer::rotate_glance_by(0., right_delta_y * 0.05 * elapsed);
-  }
-
-  if right_a && !is_zero(right_delta_x) {
-    viewer::spin_glance_by(right_delta_x * -0.05 * elapsed);
   }
 
   Ok(())
