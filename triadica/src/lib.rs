@@ -56,15 +56,15 @@ pub fn init_app() -> Result<(), JsValue> {
   // context.blend_func(WebGl2RenderingContext::ONE, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
   // context.depth_mask(false);
 
-  // let mut vertices = vec![];
-  // for i in path::compute_cube_vertices() {
-  //   vertices.push(i);
-  // }
+  let mut vertices = vec![];
+  for i in path::compute_cube_vertices() {
+    vertices.push(i);
+  }
   // for i in path::compute_lamp_tree_vertices() {
   //   vertices.push(i);
   // }
   // let vertices = path::compute_cube_vertices();
-  let vertices = path::compute_lamp_tree_vertices();
+  // let vertices = path::compute_lamp_tree_vertices();
 
   bind_attributes(&context, &program, &vertices)?;
 

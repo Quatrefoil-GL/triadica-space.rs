@@ -2,7 +2,7 @@ import init, {
   initApp,
   onWindowResize,
   onControl,
-} from "../pkg/triadica_space";
+} from "../pkg/demo_triadica_space";
 import { renderControl, startControlLoop } from "@triadica/touch-control";
 
 let isZero = (point: [number, number]): Boolean => {

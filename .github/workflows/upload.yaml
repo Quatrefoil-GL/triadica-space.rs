@@ -41,9 +41,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
 
-      - run: wasm-pack build -t web
+      - run: cd demo_triadica/ && wasm-pack build -t web
 
-      - run: yarn && yarn vite build --base=./
+      - run: cd demo_triadica/ && yarn && yarn vite build --base=./
 
       - name: Deploy to server
         id: deploy
@@ -54,7 +54,7 @@ jobs:
           flags: "-avzr --progress"
           options: ""
           ssh_options: ""
-          src: "dist/*"
+          src: "demo_triadica/dist/*"
           dest: "rsync-user@tiye.me:/web-assets/repo/${{ github.repository }}"
 
       - name: Display status from deploy
