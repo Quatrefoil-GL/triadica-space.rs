@@ -1,9 +1,6 @@
-mod path;
-mod viewer;
+pub mod path;
+pub mod viewer;
 
-use std::cell::RefCell;
-use std::include_str;
-use std::rc::Rc;
 use std::sync::RwLock;
 
 use glam::Vec3;
@@ -13,98 +10,20 @@ use wasm_bindgen::JsCast;
 use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlShader};
 
 lazy_static::lazy_static! {
-  static ref WINDOW_RATIO: RwLock<f32> = RwLock::new(1.0);
+  pub static ref WINDOW_RATIO: RwLock<f32> = RwLock::new(1.0);
 }
 
-use viewer::is_zero;
-
-#[wasm_bindgen(js_name = initApp)]
-pub fn init_app() -> Result<(), JsValue> {
-  // console_error_panic_hook::set_once();
-
-  let window = web_sys::window().ok_or("to get window")?;
-
-  let document = window.document().ok_or("to get document")?;
-  let canvas = document.query_selector(".app")?.ok_or("to get canvas")?;
-
-  on_window_resize()?;
-
-  let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
-
-  let context = canvas
-    .get_context("webgl2")?
-    .ok_or("to load context")?
-    .dyn_into::<WebGl2RenderingContext>()?;
-
-  let vert_shader = compile_shader(
-    &context,
-    WebGl2RenderingContext::VERTEX_SHADER,
-    include_str!("../shaders/demo.vert"),
-  )?;
-
-  let frag_shader = compile_shader(
-    &context,
-    WebGl2RenderingContext::FRAGMENT_SHADER,
-    include_str!("../shaders/demo.frag"),
-  )?;
-
-  let program = link_program(&context, &vert_shader, &frag_shader)?;
-  context.use_program(Some(&program));
-
-  context.enable(WebGl2RenderingContext::DEPTH_TEST);
-  context.depth_func(WebGl2RenderingContext::LESS);
-  // context.blend_func(WebGl2RenderingContext::ONE, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
-  // context.depth_mask(false);
-
-  let mut vertices = vec![];
-  for i in path::compute_cube_vertices() {
-    vertices.push(i);
-  }
-  // for i in path::compute_lamp_tree_vertices() {
-  //   vertices.push(i);
-  // }
-  // let vertices = path::compute_cube_vertices();
-  // let vertices = path::compute_lamp_tree_vertices();
-
-  bind_attributes(&context, &program, &vertices)?;
-
-  let f = Rc::new(RefCell::new(None));
-  let g = f.clone();
-
-  let copied_context = Rc::new(context.to_owned());
-  let copied_program = Rc::new(program);
-  let vertices_count = (vertices.len() / 3) as i32;
-  *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
-    if viewer::requested_rendering() {
-      bind_uniforms(&*copied_context, &*copied_program).expect("to bind uniforms");
-      draw(&context, vertices_count);
-      // document
-      //   .query_selector(".debug")
-      //   .expect("to get debug area")
-      //   .expect("some debug area")
-      //   .set_text_content(Some(&viewer::render_debug_text()));
-    }
-
-    // Schedule ourself for another requestAnimationFrame callback.
-    request_animation_frame(f.borrow().as_ref().expect("building closure"));
-  }) as Box<dyn FnMut()>));
-
-  request_animation_frame(g.borrow().as_ref().ok_or("expect a closure")?);
-
-  Ok(())
-}
-
-fn window() -> web_sys::Window {
+pub fn window() -> web_sys::Window {
   web_sys::window().expect("no global `window` exists")
 }
 
-fn request_animation_frame(f: &Closure<dyn FnMut()>) {
+pub fn request_animation_frame(f: &Closure<dyn FnMut()>) {
   window()
     .request_animation_frame(f.as_ref().unchecked_ref())
     .expect("should register `requestAnimationFrame` OK");
 }
 
-fn bind_attributes(context: &WebGl2RenderingContext, program: &WebGlProgram, vertices: &[f32]) -> Result<(), JsValue> {
+pub fn bind_attributes(context: &WebGl2RenderingContext, program: &WebGlProgram, vertices: &[f32]) -> Result<(), JsValue> {
   // web_sys::console::log_1(&format!("{:?}", vertices).into());
 
   let position_attribute_location = context.get_attrib_location(program, "a_position");
@@ -157,7 +76,7 @@ fn bind_uniform3f_location(
   Ok(())
 }
 
-fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Result<(), JsValue> {
+pub fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Result<(), JsValue> {
   let lookat = viewer::new_lookat_point();
   bind_uniform_location(context, program, "lookDistance", lookat.length())?;
 
@@ -188,40 +107,7 @@ fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Re
   Ok(())
 }
 
-#[wasm_bindgen(js_name = onWindowResize)]
-pub fn on_window_resize() -> Result<(), JsValue> {
-  let window = web_sys::window().ok_or("to get window")?;
-  let canvas = window
-    .document()
-    .ok_or("to get document")?
-    .query_selector(".app")?
-    .ok_or("to get canvas")?;
-
-  let inner_width = window.inner_width()?.as_f64().ok_or("to get window width")?;
-  let inner_height = window.inner_height()?.as_f64().ok_or("to get window height")?;
-
-  let mut r = WINDOW_RATIO.write().expect("write ratio");
-  *r = (inner_height / inner_width) as f32;
-
-  // web_sys::console::log_1(&format!("{} {}", inner_height, inner_width).into());
-
-  canvas.set_attribute("width", &format!("{}px", inner_width * 2.))?;
-  canvas.set_attribute("height", &format!("{}px", inner_height * 2.))?;
-  canvas.set_attribute("style", &format!("width: {}px; height: {}px;", inner_width, inner_height))?;
-
-  let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
-  let context = canvas
-    .get_context("webgl2")?
-    .ok_or("to get context")?
-    .dyn_into::<WebGl2RenderingContext>()?;
-  context.viewport(0, 0, inner_width as i32 * 2, inner_height as i32 * 2);
-
-  viewer::mark_dirty();
-
-  Ok(())
-}
-
-fn draw(context: &WebGl2RenderingContext, vert_count: i32) {
+pub fn draw(context: &WebGl2RenderingContext, vert_count: i32) {
   // context.color_mask(false, false, false, false);
   context.clear_color(0.0, 0.0, 0.0, 1.0);
   context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
@@ -277,40 +163,4 @@ pub fn link_program(
         .unwrap_or_else(|| String::from("Unknown error creating program object")),
     )
   }
-}
-
-#[allow(clippy::too_many_arguments)]
-#[wasm_bindgen(js_name = "onControl")]
-pub fn on_control(
-  elapsed: f32,
-  left_move_x: f32,
-  left_move_y: f32,
-  right_move_x: f32,
-  right_move_y: f32,
-  _right_delta_x: f32,
-  _right_delta_y: f32,
-  right_a: bool,
-) -> Result<(), JsValue> {
-  if !is_zero(left_move_y) {
-    viewer::move_viewer_by(Vec3::new(0., 0., -left_move_y * 2. * elapsed));
-  }
-  if !(is_zero(left_move_x)) {
-    viewer::rotate_glance_by(-0.01 * elapsed * left_move_x, 0.0);
-  }
-
-  // log_1(&JsValue::from_str(format!("shift? {}", right_a).as_str()));
-
-  if right_a {
-    if !is_zero(right_move_y) {
-      viewer::rotate_glance_by(0., right_move_y * 0.05 * elapsed);
-    }
-
-    if !is_zero(right_move_x) {
-      viewer::spin_glance_by(right_move_x * -0.05 * elapsed);
-    }
-  } else if !is_zero(right_move_x) || !is_zero(right_move_y) {
-    viewer::move_viewer_by(Vec3::new(right_move_x * 2. * elapsed, right_move_y * 2. * elapsed, 0.));
-  }
-
-  Ok(())
 }
