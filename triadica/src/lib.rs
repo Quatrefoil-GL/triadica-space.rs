@@ -1,4 +1,3 @@
-pub mod path;
 pub mod viewer;
 
 use std::sync::RwLock;
@@ -6,19 +5,23 @@ use std::sync::RwLock;
 use glam::Vec3;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
+use web_sys::Element;
 // use web_sys::console::{log_1, log_2};
 use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlShader};
+
+use viewer::is_zero;
 
 lazy_static::lazy_static! {
   pub static ref WINDOW_RATIO: RwLock<f32> = RwLock::new(1.0);
 }
 
-pub fn window() -> web_sys::Window {
+/// load `globalThis.window`
+pub fn global_window() -> web_sys::Window {
   web_sys::window().expect("no global `window` exists")
 }
 
 pub fn request_animation_frame(f: &Closure<dyn FnMut()>) {
-  window()
+  global_window()
     .request_animation_frame(f.as_ref().unchecked_ref())
     .expect("should register `requestAnimationFrame` OK");
 }
@@ -77,20 +80,15 @@ fn bind_uniform3f_location(
 }
 
 pub fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Result<(), JsValue> {
-  let lookat = viewer::new_lookat_point();
-  bind_uniform_location(context, program, "lookDistance", lookat.length())?;
+  let (forward, upward, rightward) = viewer::get_directions();
 
-  // forward
-  let lookat_u = lookat.normalize();
-  bind_uniform3f_location(context, program, "forward", lookat_u)?;
+  // directions
+  bind_uniform3f_location(context, program, "forward", forward)?;
+  bind_uniform3f_location(context, program, "upward", upward)?;
+  bind_uniform3f_location(context, program, "rightward", rightward)?;
 
-  // upward
-  let upward_vector = viewer::get_view_upward();
-  bind_uniform3f_location(context, program, "upward", upward_vector)?;
-
-  // rightward
-  let rightward_vector = lookat_u.cross(upward_vector);
-  bind_uniform3f_location(context, program, "rightward", rightward_vector)?;
+  // lookDistance, defaults to 600
+  bind_uniform_location(context, program, "lookDistance", 600.0)?;
 
   // backcone scale
   bind_uniform_location(context, program, "coneBackScale", 0.5)?;
@@ -100,7 +98,7 @@ pub fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -
   bind_uniform_location(context, program, "viewportRatio", window_ratio)?;
 
   // cameraPosition
-  let pos = viewer::get_position();
+  let pos = viewer::get_camera_position();
   bind_uniform3f_location(context, program, "cameraPosition", pos)?;
   // log_2(&"pos".into(), &format!("{:?}", pos).into());
 
@@ -137,6 +135,13 @@ pub fn compile_shader(context: &WebGl2RenderingContext, shader_type: u32, source
   }
 }
 
+pub fn context_setup(context: &WebGl2RenderingContext) {
+  context.enable(WebGl2RenderingContext::DEPTH_TEST);
+  context.depth_func(WebGl2RenderingContext::LESS);
+  // context.blend_func(WebGl2RenderingContext::ONE, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
+  // context.depth_mask(false);
+}
+
 pub fn link_program(
   context: &WebGl2RenderingContext,
   vert_shader: &WebGlShader,
@@ -163,4 +168,64 @@ pub fn link_program(
         .unwrap_or_else(|| String::from("Unknown error creating program object")),
     )
   }
+}
+
+/// handle events from touch control and move the camera
+pub fn on_control_event(
+  elapsed: f32,
+  left_move_x: f32,
+  left_move_y: f32,
+  right_move_x: f32,
+  right_move_y: f32,
+  right_a: bool,
+) -> Result<(), JsValue> {
+  if !is_zero(left_move_y) {
+    viewer::move_viewer_by(Vec3::new(0., 0., -left_move_y * 2. * elapsed));
+  }
+  if !(is_zero(left_move_x)) {
+    viewer::rotate_glance_by(0.01 * elapsed * left_move_x, 0.0);
+  }
+
+  // log_1(&JsValue::from_str(format!("shift? {}", right_a).as_str()));
+
+  if right_a {
+    if !is_zero(right_move_y) {
+      viewer::rotate_glance_by(0., right_move_y * 0.05 * elapsed);
+    }
+
+    if !is_zero(right_move_x) {
+      viewer::spin_glance_by(right_move_x * 0.05 * elapsed);
+    }
+  } else if !is_zero(right_move_x) || !is_zero(right_move_y) {
+    viewer::move_viewer_by(Vec3::new(right_move_x * 2. * elapsed, right_move_y * 2. * elapsed, 0.));
+  }
+
+  Ok(())
+}
+
+/// read window sizes and resize canvas
+pub fn resize_canvas(canvas: Element) -> Result<(), JsValue> {
+  let window = web_sys::window().ok_or("to get window")?;
+  let inner_width = window.inner_width()?.as_f64().ok_or("to get window width")?;
+  let inner_height = window.inner_height()?.as_f64().ok_or("to get window height")?;
+
+  let mut r = WINDOW_RATIO.write().expect("write ratio");
+  *r = (inner_height / inner_width) as f32;
+
+  // log_1(&format!("{} {}", inner_height, inner_width).into());
+
+  canvas.set_attribute("width", &format!("{}px", inner_width * 2.))?;
+  canvas.set_attribute("height", &format!("{}px", inner_height * 2.))?;
+  canvas.set_attribute("style", &format!("width: {}px; height: {}px;", inner_width, inner_height))?;
+
+  let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
+  let context = canvas
+    .get_context("webgl2")?
+    .ok_or("to get context")?
+    .dyn_into::<WebGl2RenderingContext>()?;
+  context.viewport(0, 0, inner_width as i32 * 2, inner_height as i32 * 2);
+
+  viewer::mark_dirty();
+
+  Ok(())
 }

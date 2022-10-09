@@ -44,30 +44,22 @@ pub fn spin_glance_by(v: f32) {
   }
 }
 
-fn get_view_forward() -> Vec3 {
-  *VIEWER_FORWARD.read().expect("to read viewer forward")
-}
-
-fn get_directions() -> (Vec3, Vec3, Vec3) {
+/// get forward, uoward, rightward directions
+pub fn get_directions() -> (Vec3, Vec3, Vec3) {
   let forward = *VIEWER_FORWARD.read().expect("to read viewer forward");
   let upward = *VIEWER_UPWARD.read().expect("to load viewer upward");
-  let rightward = upward.cross(forward); // TODO check this
+  let rightward = upward.cross(forward);
   (forward, upward, rightward)
 }
 
 /// compare the point to viewer's position and angle
 pub fn to_viewer_axis(p: Vec3) -> Vec3 {
   let (forward, upward, rightward) = get_directions();
-  rightward * -p.x + upward * p.y + forward * -p.z
+  rightward * p.x + upward * p.y + forward * -p.z
 }
 
-/// get a vector at viewing position at length 600
-pub fn new_lookat_point() -> Vec3 {
-  let forward = get_view_forward();
-  forward * 600.0
-}
-
-pub fn get_position() -> Vec3 {
+/// load camera position
+pub fn get_camera_position() -> Vec3 {
   *VIEWER_POSITION.read().expect("to load viewer position")
 }
 
@@ -87,8 +79,7 @@ pub fn requested_rendering() -> bool {
 pub fn render_debug_text() -> String {
   use std::fmt::Write;
   let mut ret = String::new();
-  writeln!(ret, "{:?}", get_position()).expect("write");
-  write!(ret, "\n{:?}", new_lookat_point()).expect("write");
+  writeln!(ret, "{:?}", get_camera_position()).expect("write");
   ret
 }
 

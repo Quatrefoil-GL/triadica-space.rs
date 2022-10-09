@@ -3,7 +3,7 @@
     "vite": "^3.1.4"
   },
   "scripts": {
-    "wasm": "cargo watch --why -w src/ -w shaders/ -s 'wasm-pack build -t web'"
+    "wasm": "cargo watch --why -w ../triadica/src/ -w src/ -w shaders/ -s 'wasm-pack build -t web'"
   },
   "dependencies": {
     "@triadica/touch-control": "0.0.1-a3"
