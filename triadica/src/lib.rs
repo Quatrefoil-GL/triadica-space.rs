@@ -26,7 +26,7 @@ pub fn request_animation_frame(f: &Closure<dyn FnMut()>) {
     .expect("should register `requestAnimationFrame` OK");
 }
 
-pub fn bind_attributes(context: &WebGl2RenderingContext, program: &WebGlProgram, vertices: &[f32]) -> Result<(), JsValue> {
+fn bind_attributes(context: &WebGl2RenderingContext, program: &WebGlProgram, vertices: &[f32]) -> Result<(), JsValue> {
   // web_sys::console::log_1(&format!("{:?}", vertices).into());
 
   let position_attribute_location = context.get_attrib_location(program, "a_position");
@@ -79,7 +79,7 @@ fn bind_uniform3f_location(
   Ok(())
 }
 
-pub fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Result<(), JsValue> {
+fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Result<(), JsValue> {
   let (forward, upward, rightward) = viewer::get_directions();
 
   // directions
@@ -105,12 +105,32 @@ pub fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -
   Ok(())
 }
 
-pub fn draw(context: &WebGl2RenderingContext, vert_count: i32) {
+pub enum DrawMode {
+  Triangles,
+  Lines,
+  LineStrip,
+  TriangleStrip,
+}
+
+impl From<DrawMode> for u32 {
+  fn from(x: DrawMode) -> Self {
+    match x {
+      DrawMode::Triangles => WebGl2RenderingContext::TRIANGLES,
+      DrawMode::Lines => WebGl2RenderingContext::LINES,
+      DrawMode::LineStrip => WebGl2RenderingContext::LINE_STRIP,
+      DrawMode::TriangleStrip => WebGl2RenderingContext::TRIANGLE_STRIP,
+    }
+  }
+}
+
+pub fn draw(context: &WebGl2RenderingContext, program: &WebGlProgram, draw_mode: DrawMode, vertices: &[f32], vert_size: i32) {
   // context.color_mask(false, false, false, false);
+  bind_attributes(context, program, vertices).expect("bind attrs");
+  bind_uniforms(context, program).expect("to bind uniforms");
   context.clear_color(0.0, 0.0, 0.0, 1.0);
   context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
 
-  context.draw_arrays(WebGl2RenderingContext::LINE_STRIP, 0, vert_count);
+  context.draw_arrays(draw_mode.into(), 0, vert_size);
 }
 
 pub fn compile_shader(context: &WebGl2RenderingContext, shader_type: u32, source: &str) -> Result<WebGlShader, String> {

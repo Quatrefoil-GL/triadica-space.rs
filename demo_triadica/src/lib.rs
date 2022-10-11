@@ -1,6 +1,7 @@
 mod shape;
 use triadica::global_window;
 use triadica::viewer;
+use web_sys::Element;
 // use web_sys::console::log_1;
 
 use std::cell::RefCell;
@@ -15,19 +16,14 @@ use web_sys::WebGl2RenderingContext;
 pub fn init_app() -> Result<(), JsValue> {
   // console_error_panic_hook::set_once();
 
-  let window = global_window();
-
-  let document = window.document().ok_or("to get document")?;
-  let canvas = document.query_selector(".app")?.ok_or("to get canvas")?;
-
   on_window_resize()?;
 
+  let canvas = get_canvas();
   let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
   let context = canvas
     .get_context("webgl2")?
     .ok_or("to load context")?
     .dyn_into::<WebGl2RenderingContext>()?;
-  let copied_context = Rc::new(context.to_owned());
 
   triadica::context_setup(&context);
 
@@ -43,8 +39,7 @@ pub fn init_app() -> Result<(), JsValue> {
     include_str!("../shaders/demo.frag"),
   )?;
 
-  let program = triadica::link_program(&context, &vert_shader, &frag_shader)?;
-  let copied_program = Rc::new(program);
+  let program = Rc::new(triadica::link_program(&context, &vert_shader, &frag_shader)?);
 
   // let mut vertices = vec![];
   // for i in shape::compute_cube_vertices() {
@@ -61,11 +56,14 @@ pub fn init_app() -> Result<(), JsValue> {
 
   *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
     if viewer::requested_rendering() {
-      context.use_program(Some(&*copied_program));
-      triadica::bind_attributes(&context, &*copied_program, &vertices).expect("bind attrs");
-      let vertices_count = (vertices.len() / 3) as i32;
-      triadica::bind_uniforms(&*copied_context, &*copied_program).expect("to bind uniforms");
-      triadica::draw(&context, vertices_count);
+      context.use_program(Some(&program));
+      triadica::draw(
+        &context,
+        &program,
+        triadica::DrawMode::Lines,
+        &vertices,
+        (vertices.len() / 3) as i32,
+      );
       // document
       //   .query_selector(".debug")
       //   .expect("to get debug area")
@@ -82,15 +80,16 @@ pub fn init_app() -> Result<(), JsValue> {
   Ok(())
 }
 
+fn get_canvas() -> Element {
+  let window = global_window();
+  let document = window.document().expect("to get document");
+  let canvas = document.query_selector(".app").expect("to get canvas").expect("some canvas");
+  canvas.dyn_into::<Element>().expect("to cast to canvas")
+}
+
 #[wasm_bindgen(js_name = onWindowResize)]
 pub fn on_window_resize() -> Result<(), JsValue> {
-  let window = global_window();
-  let canvas = window
-    .document()
-    .ok_or("to get document")?
-    .query_selector(".app")?
-    .ok_or("to get canvas")?;
-
+  let canvas = get_canvas();
   triadica::resize_canvas(canvas)
 }
 

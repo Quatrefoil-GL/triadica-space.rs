@@ -135,7 +135,6 @@ dependencies = [
  "glam",
  "js-sys",
  "lazy_static",
- "quaternions",
  "wasm-bindgen",
  "web-sys",
 ]
