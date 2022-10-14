@@ -1,6 +1,7 @@
 mod shape;
 use triadica::global_window;
 use triadica::viewer;
+use triadica::ShaderProgramCaches;
 use web_sys::Element;
 // use web_sys::console::log_1;
 
@@ -14,7 +15,7 @@ use web_sys::WebGl2RenderingContext;
 
 #[wasm_bindgen(js_name = initApp)]
 pub fn init_app() -> Result<(), JsValue> {
-  // console_error_panic_hook::set_once();
+  console_error_panic_hook::set_once();
 
   on_window_resize()?;
 
@@ -27,19 +28,12 @@ pub fn init_app() -> Result<(), JsValue> {
 
   triadica::context_setup(&context);
 
-  let vert_shader = triadica::compile_shader(
-    &context,
-    WebGl2RenderingContext::VERTEX_SHADER,
-    include_str!("../shaders/demo.vert"),
-  )?;
+  let vert_shader = include_str!("../shaders/demo.vert");
+  let frag_shader = include_str!("../shaders/demo.frag");
 
-  let frag_shader = triadica::compile_shader(
-    &context,
-    WebGl2RenderingContext::FRAGMENT_SHADER,
-    include_str!("../shaders/demo.frag"),
-  )?;
+  let program_caches = Rc::new(RefCell::new(ShaderProgramCaches::default()));
 
-  let program = Rc::new(triadica::link_program(&context, &vert_shader, &frag_shader)?);
+  let program = Rc::new(triadica::cached_link_program(&context, vert_shader, frag_shader, program_caches)?);
 
   // let mut vertices = vec![];
   // for i in shape::compute_cube_vertices() {

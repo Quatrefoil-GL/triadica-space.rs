@@ -1,3 +1,7 @@
+mod alias;
+mod component;
+mod primes;
+mod program;
 pub mod viewer;
 
 use std::sync::RwLock;
@@ -8,6 +12,10 @@ use wasm_bindgen::JsCast;
 use web_sys::Element;
 // use web_sys::console::{log_1, log_2};
 use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlShader};
+
+pub use alias::{group, object};
+pub use primes::DrawMode;
+pub use program::{cached_link_program, ShaderProgramCaches};
 
 use viewer::is_zero;
 
@@ -105,13 +113,6 @@ fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Re
   Ok(())
 }
 
-pub enum DrawMode {
-  Triangles,
-  Lines,
-  LineStrip,
-  TriangleStrip,
-}
-
 impl From<DrawMode> for u32 {
   fn from(x: DrawMode) -> Self {
     match x {
@@ -133,61 +134,11 @@ pub fn draw(context: &WebGl2RenderingContext, program: &WebGlProgram, draw_mode:
   context.draw_arrays(draw_mode.into(), 0, vert_size);
 }
 
-pub fn compile_shader(context: &WebGl2RenderingContext, shader_type: u32, source: &str) -> Result<WebGlShader, String> {
-  let shader = context
-    .create_shader(shader_type)
-    .ok_or_else(|| String::from("Unable to create shader object"))?;
-  context.shader_source(&shader, source);
-  context.compile_shader(&shader);
-
-  if context
-    .get_shader_parameter(&shader, WebGl2RenderingContext::COMPILE_STATUS)
-    .as_bool()
-    .unwrap_or(false)
-  {
-    Ok(shader)
-  } else {
-    Err(
-      context
-        .get_shader_info_log(&shader)
-        .unwrap_or_else(|| String::from("Unknown error creating shader")),
-    )
-  }
-}
-
 pub fn context_setup(context: &WebGl2RenderingContext) {
   context.enable(WebGl2RenderingContext::DEPTH_TEST);
   context.depth_func(WebGl2RenderingContext::LESS);
   // context.blend_func(WebGl2RenderingContext::ONE, WebGl2RenderingContext::ONE_MINUS_SRC_ALPHA);
   // context.depth_mask(false);
-}
-
-pub fn link_program(
-  context: &WebGl2RenderingContext,
-  vert_shader: &WebGlShader,
-  frag_shader: &WebGlShader,
-) -> Result<WebGlProgram, String> {
-  let program = context
-    .create_program()
-    .ok_or_else(|| String::from("Unable to create shader object"))?;
-
-  context.attach_shader(&program, vert_shader);
-  context.attach_shader(&program, frag_shader);
-  context.link_program(&program);
-
-  if context
-    .get_program_parameter(&program, WebGl2RenderingContext::LINK_STATUS)
-    .as_bool()
-    .unwrap_or(false)
-  {
-    Ok(program)
-  } else {
-    Err(
-      context
-        .get_program_info_log(&program)
-        .unwrap_or_else(|| String::from("Unknown error creating program object")),
-    )
-  }
 }
 
 /// handle events from touch control and move the camera
