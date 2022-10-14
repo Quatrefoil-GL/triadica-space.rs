@@ -1,36 +1,6 @@
-[package]
-name = "triadica-space"
-version = "0.1.0"
-edition = "2021"
-description = "WebGL demo"
-license = "MIT"
-repository = "https://github.com/Quatrefoil-GL/triadica-space.rs"
+[workspace]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-js-sys = "0.3.57"
-wasm-bindgen = "0.2.80"
-console_error_panic_hook = "0.1.7"
-lazy_static = "1.4.0"
-quaternions = "0.5.0-a2"
-
-[lib]
-crate-type = ["cdylib", "rlib"]
-
-
-[dependencies.web-sys]
-version = "0.3.57"
-features = [
-  "console",
-  'Document',
-  'Element',
-  'HtmlCanvasElement',
-  'WebGlBuffer',
-  "WebGlUniformLocation",
-  'WebGlVertexArrayObject',
-  'WebGl2RenderingContext',
-  'WebGlProgram',
-  'WebGlShader',
-  'Window',
+members = [
+  "triadica",
+  "demo_triadica",
 ]

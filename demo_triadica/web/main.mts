@@ -2,7 +2,7 @@ import init, {
   initApp,
   onWindowResize,
   onControl,
-} from "../pkg/triadica_space";
+} from "../pkg/demo_triadica_space";
 import { renderControl, startControlLoop } from "@triadica/touch-control";
 
 let isZero = (point: [number, number]): Boolean => {
@@ -14,8 +14,8 @@ init().then(() => {
   renderControl();
 
   startControlLoop(10, (elapsed, states, delta) => {
-    let resetting = states.leftB && states.rightB;
-    if (!isZero(states.leftMove) || !isZero(states.rightMove) || resetting) {
+    if (!isZero(states.leftMove) || !isZero(states.rightMove)) {
+      // console.log("shift a", states.shift);
       onControl(
         elapsed,
         states.leftMove[0],
@@ -24,8 +24,7 @@ init().then(() => {
         states.rightMove[1],
         delta.rightMove[0],
         delta.rightMove[1],
-        states.leftA,
-        resetting
+        states.rightA || states.shift
       );
     }
   });
@@ -33,4 +32,6 @@ init().then(() => {
   window.addEventListener("resize", (event) => {
     onWindowResize();
   });
+
+  console.log("app loaded");
 });
