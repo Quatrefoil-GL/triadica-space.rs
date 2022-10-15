@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+#[derive(Clone, Copy, Debug)]
 pub enum DrawMode {
   Triangles,
   Lines,
@@ -9,6 +10,7 @@ pub enum DrawMode {
 
 pub type VertexData = HashMap<String, VertexDataValue>;
 
+#[derive(Debug, Clone)]
 pub enum VertexDataValue {
   Float(f32),
   Vec2([f32; 2]),

@@ -11,7 +11,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::Element;
 // use web_sys::console::{log_1, log_2};
-use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlShader};
+use web_sys::{WebGl2RenderingContext, WebGlProgram};
 
 pub use alias::{group, object};
 pub use primes::DrawMode;
@@ -124,7 +124,7 @@ impl From<DrawMode> for u32 {
   }
 }
 
-pub fn draw(context: &WebGl2RenderingContext, program: &WebGlProgram, draw_mode: DrawMode, vertices: &[f32], vert_size: i32) {
+pub fn paint_canvas(context: &WebGl2RenderingContext, program: &WebGlProgram, draw_mode: DrawMode, vertices: &[f32], vert_size: i32) {
   // context.color_mask(false, false, false, false);
   bind_attributes(context, program, vertices).expect("bind attrs");
   bind_uniforms(context, program).expect("to bind uniforms");

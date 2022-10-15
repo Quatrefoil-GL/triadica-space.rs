@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::component::{Component, PackedAttrs, TriadicaElement};
 use crate::primes::{DrawMode, VertexData};
 
@@ -10,7 +12,7 @@ pub fn object(
   vertex_shader: String,
   fragment_shader: String,
   packed_attrs: PackedAttrs,
-  get_uniforms: Box<dyn Fn() -> VertexData>,
+  get_uniforms: Rc<dyn Fn() -> VertexData>,
 ) -> TriadicaElement {
   TriadicaElement::Object(Component {
     draw_mode,

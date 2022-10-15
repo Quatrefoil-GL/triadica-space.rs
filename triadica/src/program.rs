@@ -4,14 +4,9 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlShader};
 
+#[derive(Default)]
 pub struct ShaderProgramCaches {
   v: HashMap<String, WebGlProgram>,
-}
-
-impl Default for ShaderProgramCaches {
-  fn default() -> Self {
-    Self { v: HashMap::new() }
-  }
 }
 
 fn link_program(context: &WebGl2RenderingContext, vert_shader: &str, frag_shader: &str) -> Result<WebGlProgram, String> {

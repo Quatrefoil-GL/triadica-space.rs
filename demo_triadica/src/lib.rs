@@ -51,7 +51,7 @@ pub fn init_app() -> Result<(), JsValue> {
   *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
     if viewer::requested_rendering() {
       context.use_program(Some(&program));
-      triadica::draw(
+      triadica::paint_canvas(
         &context,
         &program,
         triadica::DrawMode::Lines,
