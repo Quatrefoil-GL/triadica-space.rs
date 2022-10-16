@@ -11,7 +11,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub enum TriadicaElement {
   Group(Vec<TriadicaElement>),
-  Object(Component),
+  Object(ComponentOptions),
 }
 
 impl TriadicaElement {
@@ -43,7 +43,7 @@ pub enum TriadicaElementTree {
 
 /// definition of user land component
 #[derive(Clone)]
-pub struct Component {
+pub struct ComponentOptions {
   pub draw_mode: DrawMode,
   pub vertex_shader: String,
   pub fragment_shader: String,
@@ -51,13 +51,13 @@ pub struct Component {
   pub get_uniforms: Rc<dyn Fn() -> VertexData>,
 }
 
-impl Debug for Component {
+impl Debug for ComponentOptions {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.write_fmt(format_args!("TODO Component: {:?}", self.draw_mode))
+    f.write_fmt(format_args!("TODO Component options: {:?}", self.draw_mode))
   }
 }
 
-impl Component {
+impl ComponentOptions {
   /// compile component into a webgl program that can be send to GPU
   pub fn compile_with_caches(&self, context: &WebGl2RenderingContext, caches: Rc<RefCell<ShaderProgramCaches>>) -> ComponentCache {
     ComponentCache {
@@ -82,6 +82,20 @@ impl PackedAttrs {
     let mut attrs = Vec::new();
     iter_flatten_attributes(self, &mut attrs);
     attrs
+  }
+
+  /// get a sample of vertex data
+  pub fn peek(&self) -> Option<VertexData> {
+    match self {
+      PackedAttrs::Item(x) => Some(x.to_owned()),
+      PackedAttrs::List(xs) => {
+        if xs.is_empty() {
+          None
+        } else {
+          xs[0].peek()
+        }
+      }
+    }
   }
 }
 

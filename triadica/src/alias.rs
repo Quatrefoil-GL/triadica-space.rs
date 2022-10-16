@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::component::{Component, PackedAttrs, TriadicaElement};
+use crate::component::{ComponentOptions, PackedAttrs, TriadicaElement};
 use crate::primes::{DrawMode, VertexData};
 
 pub fn group(children: Vec<TriadicaElement>) -> TriadicaElement {
@@ -14,7 +14,7 @@ pub fn object(
   packed_attrs: PackedAttrs,
   get_uniforms: Rc<dyn Fn() -> VertexData>,
 ) -> TriadicaElement {
-  TriadicaElement::Object(Component {
+  TriadicaElement::Object(ComponentOptions {
     draw_mode,
     vertex_shader,
     fragment_shader,

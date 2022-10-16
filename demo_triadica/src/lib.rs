@@ -1,11 +1,15 @@
 mod shape;
+use js_sys::Object;
 use triadica::global_window;
-use triadica::viewer;
+use triadica::object;
+use triadica::PackedAttrs;
 use triadica::ShaderProgramCaches;
+use triadica::{viewer, DrawMode};
 use web_sys::Element;
 // use web_sys::console::log_1;
 
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::include_str;
 use std::rc::Rc;
 
@@ -44,6 +48,15 @@ pub fn init_app() -> Result<(), JsValue> {
   // }
   // let vertices = shape::compute_cube_vertices();
   let vertices = shape::compute_lamp_tree_vertices();
+
+  // TODO tree
+  let tree = Rc::new(RefCell::new(object(
+    DrawMode::LineStrip,
+    vert_shader.to_owned(),
+    frag_shader.to_owned(),
+    PackedAttrs::List(vec![]), // TODO
+    Rc::new(HashMap::new),
+  )));
 
   let f = Rc::new(RefCell::new(None));
   let g = f.clone();

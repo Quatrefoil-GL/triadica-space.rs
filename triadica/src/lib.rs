@@ -14,6 +14,7 @@ use web_sys::Element;
 use web_sys::{WebGl2RenderingContext, WebGlProgram};
 
 pub use alias::{group, object};
+pub use component::PackedAttrs;
 pub use primes::DrawMode;
 pub use program::{cached_link_program, ShaderProgramCaches};
 
@@ -126,10 +127,11 @@ impl From<DrawMode> for u32 {
 
 pub fn paint_canvas(context: &WebGl2RenderingContext, program: &WebGlProgram, draw_mode: DrawMode, vertices: &[f32], vert_size: i32) {
   // context.color_mask(false, false, false, false);
-  bind_attributes(context, program, vertices).expect("bind attrs");
-  bind_uniforms(context, program).expect("to bind uniforms");
   context.clear_color(0.0, 0.0, 0.0, 1.0);
   context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
+
+  bind_uniforms(context, program).expect("to bind uniforms");
+  bind_attributes(context, program, vertices).expect("bind attrs");
 
   context.draw_arrays(draw_mode.into(), 0, vert_size);
 }
