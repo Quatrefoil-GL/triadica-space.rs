@@ -1,10 +1,15 @@
 mod shape;
+use js_sys::Object;
 use triadica::global_window;
-use triadica::viewer;
+use triadica::object;
+use triadica::PackedAttrs;
+use triadica::ShaderProgramCaches;
+use triadica::{viewer, DrawMode};
 use web_sys::Element;
 // use web_sys::console::log_1;
 
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::include_str;
 use std::rc::Rc;
 
@@ -14,7 +19,7 @@ use web_sys::WebGl2RenderingContext;
 
 #[wasm_bindgen(js_name = initApp)]
 pub fn init_app() -> Result<(), JsValue> {
-  // console_error_panic_hook::set_once();
+  console_error_panic_hook::set_once();
 
   on_window_resize()?;
 
@@ -27,19 +32,12 @@ pub fn init_app() -> Result<(), JsValue> {
 
   triadica::context_setup(&context);
 
-  let vert_shader = triadica::compile_shader(
-    &context,
-    WebGl2RenderingContext::VERTEX_SHADER,
-    include_str!("../shaders/demo.vert"),
-  )?;
+  let vert_shader = include_str!("../shaders/demo.vert");
+  let frag_shader = include_str!("../shaders/demo.frag");
 
-  let frag_shader = triadica::compile_shader(
-    &context,
-    WebGl2RenderingContext::FRAGMENT_SHADER,
-    include_str!("../shaders/demo.frag"),
-  )?;
+  let program_caches = Rc::new(RefCell::new(ShaderProgramCaches::default()));
 
-  let program = Rc::new(triadica::link_program(&context, &vert_shader, &frag_shader)?);
+  let program = Rc::new(triadica::cached_link_program(&context, vert_shader, frag_shader, program_caches)?);
 
   // let mut vertices = vec![];
   // for i in shape::compute_cube_vertices() {
@@ -51,13 +49,22 @@ pub fn init_app() -> Result<(), JsValue> {
   // let vertices = shape::compute_cube_vertices();
   let vertices = shape::compute_lamp_tree_vertices();
 
+  // TODO tree
+  let tree = Rc::new(RefCell::new(object(
+    DrawMode::LineStrip,
+    vert_shader.to_owned(),
+    frag_shader.to_owned(),
+    PackedAttrs::List(vec![]), // TODO
+    Rc::new(HashMap::new),
+  )));
+
   let f = Rc::new(RefCell::new(None));
   let g = f.clone();
 
   *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
     if viewer::requested_rendering() {
       context.use_program(Some(&program));
-      triadica::draw(
+      triadica::paint_canvas(
         &context,
         &program,
         triadica::DrawMode::Lines,
