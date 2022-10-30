@@ -41,6 +41,22 @@ pub enum TriadicaElementTree {
   Object(ComponentCache),
 }
 
+impl TriadicaElementTree {
+  /// TODO need iter for better performance, reduce cloning
+  pub fn to_list(&self) -> Vec<ComponentCache> {
+    let mut result: Vec<ComponentCache> = Vec::new();
+    match self {
+      TriadicaElementTree::Group(xs) => {
+        for x in xs {
+          result.extend_from_slice(&x.to_list())
+        }
+      }
+      TriadicaElementTree::Object(x) => result.push(x.to_owned()),
+    }
+    result
+  }
+}
+
 /// definition of user land component
 #[derive(Clone)]
 pub struct ComponentOptions {
@@ -64,6 +80,7 @@ impl ComponentOptions {
       draw_mode: self.draw_mode,
       program: program::cached_link_program(context, &self.vertex_shader, &self.fragment_shader, caches).unwrap(),
       arrays: self.packed_attrs.flatten(),
+      size: self.packed_attrs.len(),
       get_uniforms: self.get_uniforms.clone(),
     }
   }
@@ -77,11 +94,46 @@ pub enum PackedAttrs {
 }
 
 impl PackedAttrs {
+  pub fn is_empty(&self) -> bool {
+    false
+  }
+  pub fn len(&self) -> usize {
+    match self {
+      Self::Item(_) => 1,
+      Self::List(xs) => {
+        let mut x = 0;
+        for i in xs {
+          x += i.len();
+        }
+        x
+      }
+    }
+  }
+
   /// collect vertext with mutable data for performance
-  pub fn flatten(&self) -> Vec<VertexData> {
+  pub fn flatten(&self) -> Vec<(String, i32, Vec<f32>)> {
     let mut attrs = Vec::new();
     iter_flatten_attributes(self, &mut attrs);
-    attrs
+
+    if attrs.is_empty() {
+      Vec::new()
+    } else {
+      let a0 = &attrs[0];
+      let names = a0.keys().cloned().collect::<Vec<_>>();
+      let mut result = Vec::new();
+      for name in names {
+        let values: Rc<RefCell<Vec<f32>>> = Rc::new(RefCell::new(Vec::new()));
+        let unit_size = attrs.get(0).expect("peek").get(&name).expect("read from name").len() as i32;
+        for attr in attrs.iter() {
+          match attr.get(&name) {
+            Some(v) => v.push_to(values.clone()),
+            None => panic!("attribute {name} is missing",),
+          }
+        }
+        result.push((name, unit_size, values.borrow_mut().to_owned()));
+      }
+      result
+    }
   }
 
   /// get a sample of vertex data
@@ -118,7 +170,8 @@ pub struct ComponentCache {
   pub draw_mode: DrawMode,
   pub program: WebGlProgram,
   /// TODO need buffers
-  pub arrays: Vec<VertexData>,
+  pub arrays: Vec<(String, i32, Vec<f32>)>,
+  pub size: usize,
   pub get_uniforms: Rc<dyn Fn() -> VertexData>,
 }
 
