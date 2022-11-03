@@ -6,6 +6,7 @@ pub mod viewer;
 
 use std::sync::RwLock;
 
+use component::TriadicaElementTree;
 use glam::Vec3;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -16,6 +17,7 @@ use web_sys::{WebGl2RenderingContext, WebGlProgram};
 pub use alias::{group, object};
 pub use component::PackedAttrs;
 pub use primes::DrawMode;
+pub use primes::VertexDataValue;
 pub use program::{cached_link_program, ShaderProgramCaches};
 
 use viewer::is_zero;
@@ -35,10 +37,16 @@ pub fn request_animation_frame(f: &Closure<dyn FnMut()>) {
     .expect("should register `requestAnimationFrame` OK");
 }
 
-fn bind_attributes(context: &WebGl2RenderingContext, program: &WebGlProgram, vertices: &[f32]) -> Result<(), JsValue> {
+fn bind_attributes(
+  context: &WebGl2RenderingContext,
+  program: &WebGlProgram,
+  attr_name: &str,
+  unit_size: i32,
+  vertices: &[f32],
+) -> Result<(), JsValue> {
   // web_sys::console::log_1(&format!("{:?}", vertices).into());
 
-  let position_attribute_location = context.get_attrib_location(program, "a_position");
+  let position_attribute_location = context.get_attrib_location(program, attr_name);
   let buffer = context.create_buffer().ok_or("Failed to create buffer")?;
   context.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buffer));
 
@@ -63,7 +71,7 @@ fn bind_attributes(context: &WebGl2RenderingContext, program: &WebGlProgram, ver
   let vao = context.create_vertex_array().ok_or("Could not create vertex array object")?;
   context.bind_vertex_array(Some(&vao));
 
-  context.vertex_attrib_pointer_with_i32(0, 3, WebGl2RenderingContext::FLOAT, false, 0, 0);
+  context.vertex_attrib_pointer_with_i32(0, unit_size, WebGl2RenderingContext::FLOAT, false, 0, 0);
   context.enable_vertex_attrib_array(position_attribute_location as u32);
 
   Ok(())
@@ -114,26 +122,28 @@ fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Re
   Ok(())
 }
 
-impl From<DrawMode> for u32 {
-  fn from(x: DrawMode) -> Self {
-    match x {
-      DrawMode::Triangles => WebGl2RenderingContext::TRIANGLES,
-      DrawMode::Lines => WebGl2RenderingContext::LINES,
-      DrawMode::LineStrip => WebGl2RenderingContext::LINE_STRIP,
-      DrawMode::TriangleStrip => WebGl2RenderingContext::TRIANGLE_STRIP,
-    }
-  }
-}
-
-pub fn paint_canvas(context: &WebGl2RenderingContext, program: &WebGlProgram, draw_mode: DrawMode, vertices: &[f32], vert_size: i32) {
+pub fn paint_canvas(
+  context: &WebGl2RenderingContext,
+  tree: &TriadicaElementTree,
+  program: &WebGlProgram,
+  draw_mode: DrawMode,
+  vertices: &[f32],
+  unit_size: i32,
+) {
   // context.color_mask(false, false, false, false);
   context.clear_color(0.0, 0.0, 0.0, 1.0);
   context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
 
   bind_uniforms(context, program).expect("to bind uniforms");
-  bind_attributes(context, program, vertices).expect("bind attrs");
-
-  context.draw_arrays(draw_mode.into(), 0, vert_size);
+  for item in tree.to_list() {
+    for (attr_name, unit_size, data) in item.arrays {
+      bind_attributes(context, &item.program, &attr_name, unit_size, &data).expect("bind attrs");
+    }
+    context.draw_arrays(item.draw_mode.into(), 0, item.size as i32);
+  }
+  bind_attributes(context, program, "a_position", 3, vertices).expect("bind attrs");
+  let vert_size = vertices.len() / unit_size as usize;
+  context.draw_arrays(draw_mode.into(), 0, vert_size as i32);
 }
 
 pub fn context_setup(context: &WebGl2RenderingContext) {
@@ -189,7 +199,7 @@ pub fn resize_canvas(canvas: Element) -> Result<(), JsValue> {
 
   canvas.set_attribute("width", &format!("{}px", inner_width * 2.))?;
   canvas.set_attribute("height", &format!("{}px", inner_height * 2.))?;
-  canvas.set_attribute("style", &format!("width: {}px; height: {}px;", inner_width, inner_height))?;
+  canvas.set_attribute("style", &format!("width: {inner_width}px; height: {inner_height}px;"))?;
 
   let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into::<web_sys::HtmlCanvasElement>()?;
   let context = canvas

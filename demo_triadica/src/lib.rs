@@ -1,9 +1,9 @@
 mod shape;
-use js_sys::Object;
 use triadica::global_window;
 use triadica::object;
 use triadica::PackedAttrs;
 use triadica::ShaderProgramCaches;
+use triadica::VertexDataValue;
 use triadica::{viewer, DrawMode};
 use web_sys::Element;
 // use web_sys::console::log_1;
@@ -37,7 +37,12 @@ pub fn init_app() -> Result<(), JsValue> {
 
   let program_caches = Rc::new(RefCell::new(ShaderProgramCaches::default()));
 
-  let program = Rc::new(triadica::cached_link_program(&context, vert_shader, frag_shader, program_caches)?);
+  let program = Rc::new(triadica::cached_link_program(
+    &context,
+    vert_shader,
+    frag_shader,
+    program_caches.clone(),
+  )?);
 
   // let mut vertices = vec![];
   // for i in shape::compute_cube_vertices() {
@@ -49,14 +54,27 @@ pub fn init_app() -> Result<(), JsValue> {
   // let vertices = shape::compute_cube_vertices();
   let vertices = shape::compute_lamp_tree_vertices();
 
-  // TODO tree
-  let tree = Rc::new(RefCell::new(object(
-    DrawMode::LineStrip,
-    vert_shader.to_owned(),
-    frag_shader.to_owned(),
-    PackedAttrs::List(vec![]), // TODO
-    Rc::new(HashMap::new),
-  )));
+  let tree = Rc::new(RefCell::new(
+    object(
+      DrawMode::LineStrip,
+      vert_shader.to_owned(),
+      frag_shader.to_owned(),
+      PackedAttrs::List(vec![
+        PackedAttrs::Item(HashMap::from_iter([("a_position".to_owned(), VertexDataValue::Vec3([0., 0., 0.]))])),
+        PackedAttrs::Item(HashMap::from_iter([(
+          "a_position".to_owned(),
+          VertexDataValue::Vec3([100., 0., 0.]),
+        )])),
+        PackedAttrs::Item(HashMap::from_iter([(
+          "a_position".to_owned(),
+          VertexDataValue::Vec3([0., 100., 0.]),
+        )])),
+        PackedAttrs::Item(HashMap::from_iter([("a_position".to_owned(), VertexDataValue::Vec3([0., 0., 0.]))])),
+      ]),
+      Rc::new(HashMap::new),
+    )
+    .compile_to_tree(&context, program_caches)?,
+  ));
 
   let f = Rc::new(RefCell::new(None));
   let g = f.clone();
@@ -64,13 +82,7 @@ pub fn init_app() -> Result<(), JsValue> {
   *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
     if viewer::requested_rendering() {
       context.use_program(Some(&program));
-      triadica::paint_canvas(
-        &context,
-        &program,
-        triadica::DrawMode::Lines,
-        &vertices,
-        (vertices.len() / 3) as i32,
-      );
+      triadica::paint_canvas(&context, &tree.borrow(), &program, triadica::DrawMode::Lines, &vertices, 3);
       // document
       //   .query_selector(".debug")
       //   .expect("to get debug area")

@@ -43,7 +43,7 @@ pub fn cached_link_program(
   frag_shader: &str,
   caches: Rc<RefCell<ShaderProgramCaches>>,
 ) -> Result<WebGlProgram, String> {
-  let key = format!("{}\n@@@@\n{}", vert_shader, frag_shader);
+  let key = format!("{vert_shader}\n@@@@\n{frag_shader}");
 
   let mut p = (*caches).borrow_mut();
   if let Some(program) = p.v.get(&key) {
