@@ -15,9 +15,8 @@ use web_sys::Element;
 use web_sys::{WebGl2RenderingContext, WebGlProgram};
 
 pub use alias::{group, object};
-pub use component::PackedAttrs;
-pub use primes::DrawMode;
-pub use primes::VertexDataValue;
+pub use component::{PackedAttrs, TriadicaElement};
+pub use primes::{DrawMode, VertexDataValue};
 pub use program::{cached_link_program, ShaderProgramCaches};
 
 use viewer::is_zero;
@@ -122,28 +121,19 @@ fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Re
   Ok(())
 }
 
-pub fn paint_canvas(
-  context: &WebGl2RenderingContext,
-  tree: &TriadicaElementTree,
-  program: &WebGlProgram,
-  draw_mode: DrawMode,
-  vertices: &[f32],
-  unit_size: i32,
-) {
+pub fn paint_canvas(context: &WebGl2RenderingContext, tree: &TriadicaElementTree) {
   // context.color_mask(false, false, false, false);
   context.clear_color(0.0, 0.0, 0.0, 1.0);
   context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
 
-  bind_uniforms(context, program).expect("to bind uniforms");
   for item in tree.to_list() {
+    context.use_program(Some(&item.program));
+    bind_uniforms(context, &item.program).expect("to bind uniforms");
     for (attr_name, unit_size, data) in item.arrays {
       bind_attributes(context, &item.program, &attr_name, unit_size, &data).expect("bind attrs");
     }
     context.draw_arrays(item.draw_mode.into(), 0, item.size as i32);
   }
-  bind_attributes(context, program, "a_position", 3, vertices).expect("bind attrs");
-  let vert_size = vertices.len() / unit_size as usize;
-  context.draw_arrays(draw_mode.into(), 0, vert_size as i32);
 }
 
 pub fn context_setup(context: &WebGl2RenderingContext) {

@@ -29,7 +29,7 @@ pub fn compute_cube_vertices() -> Vec<f32> {
 
 type Q32 = Quaternion<f32>;
 
-pub fn compute_lamp_tree_vertices() -> Vec<f32> {
+pub fn compute_lamp_tree_vertices() -> Vec<[f32; 3]> {
   let points = fold_line4(
     14,
     Quaternion::<f32>::default(),
@@ -40,9 +40,7 @@ pub fn compute_lamp_tree_vertices() -> Vec<f32> {
   );
   let mut vertices = Vec::new();
   for p in points {
-    vertices.push(p.x);
-    vertices.push(p.y);
-    vertices.push(p.z - 400.);
+    vertices.push([p.x, p.y, p.z - 400.]);
   }
   vertices
 }
