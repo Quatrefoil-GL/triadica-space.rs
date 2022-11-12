@@ -119,6 +119,7 @@ impl PackedAttrs {
       Vec::new()
     } else {
       let a0 = &attrs[0];
+      // TODO for performance, need to reduce allocation
       let names = a0.keys().cloned().collect::<Vec<_>>();
       let mut result = Vec::new();
       for name in names {

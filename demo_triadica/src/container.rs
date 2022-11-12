@@ -12,15 +12,7 @@ pub fn container() -> TriadicaElement {
   let vert_shader = include_str!("../shaders/demo.vert");
   let frag_shader = include_str!("../shaders/demo.frag");
 
-  let vertices = compute_lamp_tree_vertices();
-  let mut data = vec![];
-  for v in vertices {
-    data.push(PackedAttrs::Item(HashMap::from_iter([(
-      "a_position".to_string(),
-      VertexDataValue::Vec3(v),
-    )])));
-  }
-  let lamp_attrs = PackedAttrs::List(data);
+  let lamp_attrs = compute_lamp_tree_vertices();
 
   group(vec![
     object(
