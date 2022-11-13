@@ -10,8 +10,8 @@ use component::TriadicaElementTree;
 use glam::Vec3;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
+use web_sys::console::log_1;
 use web_sys::Element;
-// use web_sys::console::{log_1, log_2};
 use web_sys::{WebGl2RenderingContext, WebGlProgram};
 
 pub use alias::{group, object};
@@ -125,6 +125,8 @@ pub fn paint_canvas(context: &WebGl2RenderingContext, tree: &TriadicaElementTree
   // context.color_mask(false, false, false, false);
   context.clear_color(0.0, 0.0, 0.0, 1.0);
   context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
+
+  log_1(&"paint".into());
 
   for item in tree.to_list() {
     context.use_program(Some(&item.program));

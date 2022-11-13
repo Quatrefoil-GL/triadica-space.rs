@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 use web_sys::WebGl2RenderingContext;
 
@@ -21,7 +21,8 @@ impl From<DrawMode> for u32 {
   }
 }
 
-pub type VertexData = HashMap<String, VertexDataValue>;
+/// collection of key/value pairs
+pub type VertexData = Vec<(String, VertexDataValue)>;
 
 #[derive(Debug, Clone)]
 pub enum VertexDataValue {

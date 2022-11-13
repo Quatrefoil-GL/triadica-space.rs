@@ -4,8 +4,8 @@ mod shape;
 use triadica::global_window;
 use triadica::viewer;
 use triadica::ShaderProgramCaches;
+use web_sys::console::log_1;
 use web_sys::Element;
-// use web_sys::console::log_1;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -33,6 +33,7 @@ pub fn init_app() -> Result<(), JsValue> {
   let program_caches = Rc::new(RefCell::new(ShaderProgramCaches::default()));
 
   let tree = Rc::new(RefCell::new(container().compile_to_tree(&context, program_caches)?));
+  log_1(&"flatterned".into());
 
   let f = Rc::new(RefCell::new(None));
   let g = f.clone();

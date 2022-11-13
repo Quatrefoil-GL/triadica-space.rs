@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use quaternions::{qi, Quaternion};
 use triadica::{PackedAttrs, VertexDataValue};
 
@@ -47,10 +45,10 @@ pub fn compute_lamp_tree_vertices() -> PackedAttrs {
 fn vertex_data(points: &[Q32]) -> PackedAttrs {
   let mut data = vec![];
   for p in points {
-    data.push(PackedAttrs::Item(HashMap::from_iter([(
+    data.push(PackedAttrs::Item(vec![(
       "a_position".to_string(),
       VertexDataValue::Vec3([p.x, p.y, p.z]),
-    )])));
+    )]));
   }
   PackedAttrs::List(data)
 }
