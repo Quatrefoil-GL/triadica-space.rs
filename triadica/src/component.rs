@@ -4,7 +4,7 @@ use web_sys::{WebGl2RenderingContext, WebGlProgram};
 
 use crate::{
   primes::{DrawMode, VertexData},
-  program, ShaderProgramCaches,
+  program, ShaderProgramCaches, VertexDataValue,
 };
 
 /// structure in user markups
@@ -118,19 +118,25 @@ impl PackedAttrs {
     if attrs.is_empty() {
       Vec::new()
     } else {
+      // TODO for performance, need to reduce allocation
       let a0 = &attrs[0];
-      let names = a0.keys().cloned().collect::<Vec<_>>();
       let mut result = Vec::new();
-      for name in names {
-        let values: Rc<RefCell<Vec<f32>>> = Rc::new(RefCell::new(Vec::new()));
-        let unit_size = attrs.get(0).expect("peek").get(&name).expect("read from name").len() as i32;
+      for (idx, record) in a0.iter().enumerate() {
+        let mut values: Vec<f32> = vec![];
+        let unit_size = record.1.len() as i32;
         for attr in attrs.iter() {
-          match attr.get(&name) {
-            Some(v) => v.push_to(values.clone()),
-            None => panic!("attribute {name} is missing",),
+          if attr.len() == a0.len() {
+            match &attr[idx].1 {
+              VertexDataValue::Float(f) => values.push(*f),
+              VertexDataValue::Vec2(v) => values.extend_from_slice(v),
+              VertexDataValue::Vec3(v) => values.extend_from_slice(v),
+              VertexDataValue::Vec4(v) => values.extend_from_slice(v),
+            }
+          } else {
+            unreachable!("unexpected length")
           }
         }
-        result.push((name, unit_size, values.borrow_mut().to_owned()));
+        result.push((a0[idx].0.to_owned(), unit_size, values.to_owned()));
       }
       result
     }

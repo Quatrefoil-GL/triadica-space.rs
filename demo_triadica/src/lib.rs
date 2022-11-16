@@ -1,20 +1,18 @@
+mod container;
 mod shape;
+
 use triadica::global_window;
-use triadica::object;
-use triadica::PackedAttrs;
+use triadica::viewer;
 use triadica::ShaderProgramCaches;
-use triadica::VertexDataValue;
-use triadica::{viewer, DrawMode};
+use web_sys::console::log_1;
 use web_sys::Element;
-// use web_sys::console::log_1;
 
 use std::cell::RefCell;
-use std::collections::HashMap;
-use std::include_str;
 use std::rc::Rc;
 
 use wasm_bindgen::{prelude::*, JsCast};
 // use web_sys::console::{log_1, log_2};
+use container::container;
 use web_sys::WebGl2RenderingContext;
 
 #[wasm_bindgen(js_name = initApp)]
@@ -32,57 +30,18 @@ pub fn init_app() -> Result<(), JsValue> {
 
   triadica::context_setup(&context);
 
-  let vert_shader = include_str!("../shaders/demo.vert");
-  let frag_shader = include_str!("../shaders/demo.frag");
-
   let program_caches = Rc::new(RefCell::new(ShaderProgramCaches::default()));
 
-  let program = Rc::new(triadica::cached_link_program(
-    &context,
-    vert_shader,
-    frag_shader,
-    program_caches.clone(),
-  )?);
-
-  // let mut vertices = vec![];
-  // for i in shape::compute_cube_vertices() {
-  //   vertices.push(i);
-  // }
-  // for i in shape::compute_lamp_tree_vertices() {
-  //   vertices.push(i);
-  // }
-  // let vertices = shape::compute_cube_vertices();
-  let vertices = shape::compute_lamp_tree_vertices();
-
-  let tree = Rc::new(RefCell::new(
-    object(
-      DrawMode::LineStrip,
-      vert_shader.to_owned(),
-      frag_shader.to_owned(),
-      PackedAttrs::List(vec![
-        PackedAttrs::Item(HashMap::from_iter([("a_position".to_owned(), VertexDataValue::Vec3([0., 0., 0.]))])),
-        PackedAttrs::Item(HashMap::from_iter([(
-          "a_position".to_owned(),
-          VertexDataValue::Vec3([100., 0., 0.]),
-        )])),
-        PackedAttrs::Item(HashMap::from_iter([(
-          "a_position".to_owned(),
-          VertexDataValue::Vec3([0., 100., 0.]),
-        )])),
-        PackedAttrs::Item(HashMap::from_iter([("a_position".to_owned(), VertexDataValue::Vec3([0., 0., 0.]))])),
-      ]),
-      Rc::new(HashMap::new),
-    )
-    .compile_to_tree(&context, program_caches)?,
-  ));
+  let tree = Rc::new(RefCell::new(container().compile_to_tree(&context, program_caches)?));
+  log_1(&"flatterned".into());
 
   let f = Rc::new(RefCell::new(None));
   let g = f.clone();
 
   *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
     if viewer::requested_rendering() {
-      context.use_program(Some(&program));
-      triadica::paint_canvas(&context, &tree.borrow(), &program, triadica::DrawMode::Lines, &vertices, 3);
+      triadica::paint_canvas(&context, &tree.borrow());
+
       // document
       //   .query_selector(".debug")
       //   .expect("to get debug area")

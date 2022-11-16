@@ -1,4 +1,5 @@
 use quaternions::{qi, Quaternion};
+use triadica::{PackedAttrs, VertexDataValue};
 
 #[allow(dead_code)]
 pub fn compute_cube_vertices() -> Vec<f32> {
@@ -29,25 +30,30 @@ pub fn compute_cube_vertices() -> Vec<f32> {
 
 type Q32 = Quaternion<f32>;
 
-pub fn compute_lamp_tree_vertices() -> Vec<f32> {
-  let points = fold_line4(
+pub fn compute_lamp_tree_vertices() -> PackedAttrs {
+  fold_line4(
     14,
     Quaternion::<f32>::default(),
     qi(0, 0, 1200, 0),
     (qi(22, 0, 20, 0), qi(23, 16, 20, 0), qi(27, 16, 20, 0), qi(28, 0, 20, 0)),
     qi(50, 0, 0, 0).inverse(),
     2.,
-  );
-  let mut vertices = Vec::new();
-  for p in points {
-    vertices.push(p.x);
-    vertices.push(p.y);
-    vertices.push(p.z - 400.);
-  }
-  vertices
+  )
 }
 
-pub fn fold_line4(level: u32, base: Q32, v: Q32, q4: (Q32, Q32, Q32, Q32), full_reversed: Q32, minimal_seg: f32) -> Vec<Q32> {
+/// make vertex data from quaterion points
+fn vertex_data(points: &[Q32]) -> PackedAttrs {
+  let mut data = vec![];
+  for p in points {
+    data.push(PackedAttrs::Item(vec![(
+      "a_position".to_string(),
+      VertexDataValue::Vec3([p.x, p.y, p.z]),
+    )]));
+  }
+  PackedAttrs::List(data)
+}
+
+pub fn fold_line4(level: u32, base: Q32, v: Q32, q4: (Q32, Q32, Q32, Q32), full_reversed: Q32, minimal_seg: f32) -> PackedAttrs {
   let (a, b, c, d) = q4;
   let next_v = v * full_reversed;
   let branch_a = next_v * a;
@@ -55,35 +61,15 @@ pub fn fold_line4(level: u32, base: Q32, v: Q32, q4: (Q32, Q32, Q32, Q32), full_
   let branch_c = next_v * c;
   let branch_d = next_v * d;
   if level == 0 || v.square_length() < minimal_seg {
-    vec![base + branch_a, base + branch_b, base + branch_c, base + branch_d, base + v]
+    vertex_data(&[base + branch_a, base + branch_b, base + branch_c, base + branch_d, base + v])
   } else {
-    let mut ret = vec![];
-    ret.extend(fold_line4(level - 1, base, branch_a, q4, full_reversed, minimal_seg));
-    ret.extend(fold_line4(
-      level - 1,
-      base + branch_a,
-      branch_b - branch_a,
-      q4,
-      full_reversed,
-      minimal_seg,
-    ));
-    ret.extend(fold_line4(
-      level - 1,
-      base + branch_b,
-      branch_c - branch_b,
-      q4,
-      full_reversed,
-      minimal_seg,
-    ));
-    ret.extend(fold_line4(
-      level - 1,
-      base + branch_c,
-      branch_d - branch_c,
-      q4,
-      full_reversed,
-      minimal_seg,
-    ));
-    ret.extend(fold_line4(level - 1, base + branch_d, v - branch_d, q4, full_reversed, minimal_seg));
-    ret
+    let ret = vec![
+      fold_line4(level - 1, base, branch_a, q4, full_reversed, minimal_seg),
+      fold_line4(level - 1, base + branch_a, branch_b - branch_a, q4, full_reversed, minimal_seg),
+      fold_line4(level - 1, base + branch_b, branch_c - branch_b, q4, full_reversed, minimal_seg),
+      fold_line4(level - 1, base + branch_c, branch_d - branch_c, q4, full_reversed, minimal_seg),
+      fold_line4(level - 1, base + branch_d, v - branch_d, q4, full_reversed, minimal_seg),
+    ];
+    PackedAttrs::List(ret)
   }
 }
