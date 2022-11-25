@@ -63,6 +63,7 @@ pub struct ComponentOptions {
   pub draw_mode: DrawMode,
   pub vertex_shader: String,
   pub fragment_shader: String,
+  pub attr_names: Vec<(String, i8)>,
   pub packed_attrs: PackedAttrs,
   pub get_uniforms: Rc<dyn Fn() -> VertexData>,
 }
@@ -79,6 +80,7 @@ impl ComponentOptions {
     ComponentCache {
       draw_mode: self.draw_mode,
       program: program::cached_link_program(context, &self.vertex_shader, &self.fragment_shader, caches).unwrap(),
+      attr_names: self.attr_names.clone(),
       arrays: self.packed_attrs.flatten(),
       size: self.packed_attrs.len(),
       get_uniforms: self.get_uniforms.clone(),
@@ -111,7 +113,7 @@ impl PackedAttrs {
   }
 
   /// collect vertext with mutable data for performance
-  pub fn flatten(&self) -> Vec<(String, i32, Vec<f32>)> {
+  pub fn flatten(&self) -> Vec<Vec<f32>> {
     let mut attrs = Vec::new();
     iter_flatten_attributes(self, &mut attrs);
 
@@ -121,12 +123,11 @@ impl PackedAttrs {
       // TODO for performance, need to reduce allocation
       let a0 = &attrs[0];
       let mut result = Vec::new();
-      for (idx, record) in a0.iter().enumerate() {
+      for (idx, _record) in a0.iter().enumerate() {
         let mut values: Vec<f32> = vec![];
-        let unit_size = record.1.len() as i32;
         for attr in attrs.iter() {
           if attr.len() == a0.len() {
-            match &attr[idx].1 {
+            match &attr[idx] {
               VertexDataValue::Float(f) => values.push(*f),
               VertexDataValue::Vec2(v) => values.extend_from_slice(v),
               VertexDataValue::Vec3(v) => values.extend_from_slice(v),
@@ -136,7 +137,7 @@ impl PackedAttrs {
             unreachable!("unexpected length")
           }
         }
-        result.push((a0[idx].0.to_owned(), unit_size, values.to_owned()));
+        result.push(values.to_owned());
       }
       result
     }
@@ -175,8 +176,9 @@ fn iter_flatten_attributes(packed_attrs: &PackedAttrs, attrs: &mut Vec<VertexDat
 pub struct ComponentCache {
   pub draw_mode: DrawMode,
   pub program: WebGlProgram,
+  pub attr_names: Vec<(String, i8)>,
   /// TODO need buffers
-  pub arrays: Vec<(String, i32, Vec<f32>)>,
+  pub arrays: Vec<Vec<f32>>,
   pub size: usize,
   pub get_uniforms: Rc<dyn Fn() -> VertexData>,
 }

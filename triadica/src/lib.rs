@@ -131,8 +131,12 @@ pub fn paint_canvas(context: &WebGl2RenderingContext, tree: &TriadicaElementTree
   for item in tree.to_list() {
     context.use_program(Some(&item.program));
     bind_uniforms(context, &item.program).expect("to bind uniforms");
-    for (attr_name, unit_size, data) in item.arrays {
-      bind_attributes(context, &item.program, &attr_name, unit_size, &data).expect("bind attrs");
+    if item.arrays.len() != item.attr_names.len() {
+      panic!("arrays and attr_names should have same length: {:?}", item.attr_names);
+    }
+    for (idx, data) in item.arrays.iter().enumerate() {
+      let (a_name, a_size) = &item.attr_names[idx];
+      bind_attributes(context, &item.program, a_name, *a_size as i32, data).expect("bind attrs");
     }
     context.draw_arrays(item.draw_mode.into(), 0, item.size as i32);
   }

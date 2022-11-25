@@ -22,7 +22,7 @@ impl From<DrawMode> for u32 {
 }
 
 /// collection of key/value pairs
-pub type VertexData = Vec<(String, VertexDataValue)>;
+pub type VertexData = Vec<VertexDataValue>;
 
 #[derive(Debug, Clone)]
 pub enum VertexDataValue {

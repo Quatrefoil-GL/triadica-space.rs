@@ -11,6 +11,7 @@ pub fn object(
   draw_mode: DrawMode,
   vertex_shader: String,
   fragment_shader: String,
+  attr_names: Vec<(String, i8)>,
   packed_attrs: PackedAttrs,
   get_uniforms: Rc<dyn Fn() -> VertexData>,
 ) -> TriadicaElement {
@@ -18,6 +19,7 @@ pub fn object(
     draw_mode,
     vertex_shader,
     fragment_shader,
+    attr_names,
     packed_attrs,
     get_uniforms,
   })
