@@ -4,6 +4,8 @@ mod primes;
 mod program;
 pub mod viewer;
 
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::sync::RwLock;
 
 use component::TriadicaElementTree;
@@ -121,7 +123,7 @@ fn bind_uniforms(context: &WebGl2RenderingContext, program: &WebGlProgram) -> Re
   Ok(())
 }
 
-pub fn paint_canvas(context: &WebGl2RenderingContext, tree: &TriadicaElementTree) {
+pub fn paint_canvas(context: &WebGl2RenderingContext, tree: &TriadicaElementTree, caches: Rc<RefCell<ShaderProgramCaches>>) {
   // context.color_mask(false, false, false, false);
   context.clear_color(0.0, 0.0, 0.0, 1.0);
   context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
@@ -129,14 +131,16 @@ pub fn paint_canvas(context: &WebGl2RenderingContext, tree: &TriadicaElementTree
   log_1(&"paint".into());
 
   for item in tree.to_list() {
-    context.use_program(Some(&item.program));
-    bind_uniforms(context, &item.program).expect("to bind uniforms");
+    let program = cached_link_program(context, &item.vertex_shader, &item.fragment_shader, caches.clone()).unwrap();
+    context.use_program(Some(&program));
+    bind_uniforms(context, &program).expect("to bind uniforms");
     if item.arrays.len() != item.attr_names.len() {
+      // TODO
       panic!("arrays and attr_names should have same length: {:?}", item.attr_names);
     }
     for (idx, data) in item.arrays.iter().enumerate() {
       let (a_name, a_size) = &item.attr_names[idx];
-      bind_attributes(context, &item.program, a_name, *a_size as i32, data).expect("bind attrs");
+      bind_attributes(context, &program, a_name, *a_size as i32, data).expect("bind attrs");
     }
     context.draw_arrays(item.draw_mode.into(), 0, item.size as i32);
   }

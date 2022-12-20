@@ -11,11 +11,7 @@ pub fn container() -> TriadicaElement {
   let vert_shader = include_str!("../shaders/demo.vert");
   let frag_shader = include_str!("../shaders/demo.frag");
 
-  log_1(&"building".into());
-
   let lamp_attrs = compute_lamp_tree_vertices();
-
-  log_1(&"finished building".into());
 
   group(vec![
     object(

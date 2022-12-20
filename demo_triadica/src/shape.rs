@@ -43,7 +43,7 @@ pub fn compute_lamp_tree_vertices() -> PackedAttrs {
 
 /// make vertex data from quaterion points
 fn vertex_data(points: &[Q32]) -> PackedAttrs {
-  let mut data = vec![];
+  let mut data = Vec::with_capacity(points.len());
   for p in points {
     data.push(PackedAttrs::Item(vec![VertexDataValue::Vec3([p.x, p.y, p.z])]));
   }

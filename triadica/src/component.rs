@@ -1,10 +1,8 @@
-use std::{cell::RefCell, fmt::Debug, rc::Rc};
-
-use web_sys::{WebGl2RenderingContext, WebGlProgram};
+use std::{fmt::Debug, rc::Rc};
 
 use crate::{
   primes::{DrawMode, VertexData},
-  program, ShaderProgramCaches, VertexDataValue,
+  VertexDataValue,
 };
 
 /// structure in user markups
@@ -16,20 +14,16 @@ pub enum TriadicaElement {
 
 impl TriadicaElement {
   /// compile from markup to data for webgl program
-  pub fn compile_to_tree(
-    &self,
-    context: &WebGl2RenderingContext,
-    caches: Rc<RefCell<ShaderProgramCaches>>,
-  ) -> Result<TriadicaElementTree, String> {
+  pub fn compile_to_tree(&self) -> Result<TriadicaElementTree, String> {
     match self {
       TriadicaElement::Group(children) => {
         let children = children
           .iter()
-          .map(|child| child.compile_to_tree(context, caches.clone()))
+          .map(|child| child.compile_to_tree())
           .collect::<Result<Vec<_>, _>>()?;
         Ok(TriadicaElementTree::Group(children))
       }
-      TriadicaElement::Object(component) => Ok(TriadicaElementTree::Object(component.compile_with_caches(context, caches))),
+      TriadicaElement::Object(component) => Ok(TriadicaElementTree::Object(component.compile_attributes())),
     }
   }
 }
@@ -76,10 +70,11 @@ impl Debug for ComponentOptions {
 
 impl ComponentOptions {
   /// compile component into a webgl program that can be send to GPU
-  pub fn compile_with_caches(&self, context: &WebGl2RenderingContext, caches: Rc<RefCell<ShaderProgramCaches>>) -> ComponentCache {
+  pub fn compile_attributes(&self) -> ComponentCache {
     ComponentCache {
       draw_mode: self.draw_mode,
-      program: program::cached_link_program(context, &self.vertex_shader, &self.fragment_shader, caches).unwrap(),
+      vertex_shader: self.vertex_shader.clone(),
+      fragment_shader: self.fragment_shader.clone(),
       attr_names: self.attr_names.clone(),
       arrays: self.packed_attrs.flatten(),
       size: self.packed_attrs.len(),
@@ -114,7 +109,7 @@ impl PackedAttrs {
 
   /// collect vertext with mutable data for performance
   pub fn flatten(&self) -> Vec<Vec<f32>> {
-    let mut attrs = Vec::new();
+    let mut attrs = Vec::with_capacity(self.len());
     iter_flatten_attributes(self, &mut attrs);
 
     if attrs.is_empty() {
@@ -124,7 +119,7 @@ impl PackedAttrs {
       let a0 = &attrs[0];
       let mut result = Vec::new();
       for (idx, _record) in a0.iter().enumerate() {
-        let mut values: Vec<f32> = vec![];
+        let mut values: Vec<f32> = Vec::with_capacity(attrs.len() * 3);
         for attr in attrs.iter() {
           if attr.len() == a0.len() {
             match &attr[idx] {
@@ -175,7 +170,8 @@ fn iter_flatten_attributes(packed_attrs: &PackedAttrs, attrs: &mut Vec<VertexDat
 #[derive(Clone)]
 pub struct ComponentCache {
   pub draw_mode: DrawMode,
-  pub program: WebGlProgram,
+  pub vertex_shader: String,
+  pub fragment_shader: String,
   pub attr_names: Vec<(String, i8)>,
   /// TODO need buffers
   pub arrays: Vec<Vec<f32>>,

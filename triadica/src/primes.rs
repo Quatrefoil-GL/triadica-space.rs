@@ -1,5 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
 use web_sys::WebGl2RenderingContext;
 
 #[derive(Clone, Copy, Debug)]
@@ -43,15 +41,6 @@ impl VertexDataValue {
       VertexDataValue::Vec2(_) => 2,
       VertexDataValue::Vec3(_) => 3,
       VertexDataValue::Vec4(_) => 4,
-    }
-  }
-
-  pub fn push_to(&self, xs: Rc<RefCell<Vec<f32>>>) {
-    match self {
-      VertexDataValue::Float(x) => xs.borrow_mut().push(*x),
-      VertexDataValue::Vec2(x) => xs.borrow_mut().extend_from_slice(x),
-      VertexDataValue::Vec3(x) => xs.borrow_mut().extend_from_slice(x),
-      VertexDataValue::Vec4(x) => xs.borrow_mut().extend_from_slice(x),
     }
   }
 }
