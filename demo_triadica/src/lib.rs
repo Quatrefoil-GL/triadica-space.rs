@@ -1,4 +1,4 @@
-mod container;
+pub mod container;
 mod shape;
 
 use triadica::global_window;
@@ -32,7 +32,9 @@ pub fn init_app() -> Result<(), JsValue> {
 
   let program_caches = Rc::new(RefCell::new(ShaderProgramCaches::default()));
 
-  let tree = Rc::new(RefCell::new(container().compile_to_tree(&context, program_caches)?));
+  log_1(&"status ready".into());
+
+  let tree = Rc::new(RefCell::new(container().compile_to_tree()?));
   log_1(&"flatterned".into());
 
   let f = Rc::new(RefCell::new(None));
@@ -40,7 +42,7 @@ pub fn init_app() -> Result<(), JsValue> {
 
   *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
     if viewer::requested_rendering() {
-      triadica::paint_canvas(&context, &tree.borrow());
+      triadica::paint_canvas(&context, &tree.borrow(), program_caches.clone());
 
       // document
       //   .query_selector(".debug")

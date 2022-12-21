@@ -37,3 +37,7 @@ features = [
   'WebGlShader',
   'Window',
 ]
+
+[profile.dev]
+lto = true
+opt-level = "z"
